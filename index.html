@@ -2612,7 +2612,7 @@ async function odBase(scope){
 }
 async function odPutCard(scope,id,obj){
   const b=await odBase(scope); if(!b) return false;
-  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/cards/'+id+'.json'):(GRAPH+'/me/drive/items/'+b.baseId+':/cards/'+id+'.json');
+  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/cards/'+id+'.json:/content'):(GRAPH+'/me/drive/items/'+b.baseId+':/cards/'+id+'.json:/content');
   await gFetch(url,{method:'PUT',body:JSON.stringify(obj),json:1});
   return true;
 }
