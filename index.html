@@ -687,7 +687,7 @@ header .search input:focus{background:#fff;border-color:rgba(31,44,73,.5)}
 </main>
 
 <footer>
-  登録データはこのブラウザ内（localStorage）にのみ保存されます。端末を変更するときは「JSON バックアップ」から書き出してください。<br>
+  登録データはこのブラウザ内に保存され、OneDrive 接続時は同期します。同期状態は右下の表示で確認できます。「JSON バックアップ」で写真を含む名刺データを書き出せます。<br>
   © つなぐフード名刺帳 — ブラウザで動く名刺管理
 </footer>
 
@@ -2612,38 +2612,39 @@ async function odBase(scope){
 }
 async function odPutCard(scope,id,obj){
   const b=await odBase(scope); if(!b) return false;
-  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/cards/'+id+'.json:/content'):(GRAPH+'/me/drive/items/'+b.baseId+':/cards/'+id+'.json:/content');
-  await gFetch(url,{method:'PUT',body:JSON.stringify(obj),json:1});
+  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/'+encodeURIComponent(id)+'.json'):(GRAPH+'/me/drive/items/'+b.baseId+':/'+encodeURIComponent(id)+'.json');
+  await gFetch(url+':/content',{method:'PUT',body:JSON.stringify(obj),json:1});
   return true;
 }
 async function odDelCard(scope,id){
   if(scope==='shared'&&!odCfg.shared) return;
   const b=await odBase(scope); if(!b) return;
-  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/cards/'+id+'.json'):(GRAPH+'/me/drive/items/'+b.baseId+':/cards/'+id+'.json');
+  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/'+encodeURIComponent(id)+'.json'):(GRAPH+'/me/drive/items/'+b.baseId+':/'+encodeURIComponent(id)+'.json');
   try{ await gFetch(url,{method:'DELETE'}) }catch(e){ if(!/404/.test(String(e))) throw e }
 }
 async function odListCards(scope){
   const b=await odBase(scope); if(!b) return [];
   const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+'/children'):(GRAPH+'/me/drive/items/'+b.baseId+'/children');
-  const j=await (await gFetch(url)).json();
-  const files=(j.value||[]).filter(x=>x.file&&x.name.endsWith('.json'));
+  const j={value:[]}; let next=url;
+  while(next){ const page=await (await gFetch(next)).json(); j.value.push(...(page.value||[])); next=page['@odata.nextLink']||'' }
+  const files=(j.value||[]).filter(x=>x.file&&x.name.endsWith('.json')&&x.name!=='settings.json');
   const out=[];
   for(const f of files){
     const u=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+f.id+'/content'):(GRAPH+'/me/drive/items/'+f.id+'/content');
-    try{ const d=JSON.parse(await (await gFetch(u)).text()); if(d&&d.id) out.push(d) }catch(e){}
+    const d=JSON.parse(await (await gFetch(u)).text()); if(d&&d.id) out.push(d);
   }
   return out;
 }
 async function odGetSettings(){
   if(!odCfg.shared) return null;
   const b=await odBase('shared'); if(!b) return null;
-  try{ return await (await gFetch(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/settings.json')).json() }
+  try{ return await (await gFetch(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/settings.json:/content')).json() }
   catch(e){ if(/404/.test(String(e))) return null; throw e }
 }
 async function odPutSettings(obj){
   if(!odCfg.shared) return;
   const b=await odBase('shared'); if(!b) return;
-  await gFetch(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/settings.json',{method:'PUT',body:JSON.stringify(obj),json:1});
+  await gFetch(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/settings.json:/content',{method:'PUT',body:JSON.stringify(obj),json:1});
 }
 
 /* --- マージ --- */
@@ -2656,7 +2657,7 @@ function odMergeCard(lo,re){
   out.extra=Object.assign({},lose.extra||{},win.extra||{});
   out.tags=[...new Set([].concat(win.tags||[],lose.tags||[]))];
   if(!out.image&&lose.image) out.image=lose.image;
-  out.rev=Math.max(lo.rev||0,re.rev||0)+1;
+  out.rev=Math.max(lo.rev||0,re.rev||0);
   out.scope=lo.scope||re.scope||'private';
   return out;
 }
@@ -2672,7 +2673,7 @@ async function odSync(manual){
     let remote=[];
     for(const sc of ['shared','private']){
       if(sc==='shared'&&!odCfg.shared) continue;
-      try{ remote=remote.concat(await odListCards(sc)) }catch(e){ if(manual) throw e }
+      remote=remote.concat(await odListCards(sc));
     }
     remote.forEach(re=>{
       re.scope=re.scope==='shared'?'shared':'private';
@@ -2711,7 +2712,7 @@ async function odSync(manual){
       }
     }
     if(odSettingsDirty&&odCfg.shared){
-      const obj={cats,fields,updated:new Date().toISOString(),by:odMe};
+      const obj={cats,fields:cfields,updated:new Date().toISOString(),by:odMe};
       await odPutSettings(obj); odSnap.settings=obj.updated; odSettingsDirty=false;
     }
     odSnap.time=new Date().toISOString();
@@ -2722,7 +2723,7 @@ async function odSync(manual){
   }catch(e){
     odError=String(e.message||e); odChip();
     if(manual) odNote('同期できませんでした：'+odError,true);
-  }finally{ odSyncing=false }
+  }finally{ odSyncing=false; odChip() }
 }
 const odSer=c=>JSON.stringify(c);
 function odQueue(){ clearTimeout(odTimer); odTimer=setTimeout(()=>{ odSync(false) },2500) }
@@ -2791,15 +2792,15 @@ async function odPickShared(){
     const j=await (async()=>{ const out=[];try{ const s=await (await gFetch(GRAPH+'/me/drive/sharedWithMe')).json(); (s.value||[]).forEach(f=>{ if(f.folder) out.push(f) }) }catch(e){}try{ const r=await (await gFetch(GRAPH+'/me/drive/root/children?$top=100')).json(); (r.value||[]).forEach(f=>{ if(f.folder) out.push(f) }) }catch(e){}return {value:out} })();
     (j.value||[]).forEach(x=>{
       const it=x.remoteItem||x;
-      if((it.folder||(x.remoteItem&&x.remoteItem.folder))&&!x.deleted)
-        if(/vault/i.test(x.name||it.name||''))return;cands[((it.parentReference&&it.parentReference.driveId)||'')+'/'+(it.id||'')]={driveId:(it.parentReference&&it.parentReference.driveId)||'',id:it.id,name:x.name||it.name||'(無題)'};
+      if(!it.folder||x.deleted||/vault/i.test(x.name||it.name||'')) return;
+      cands[((it.parentReference&&it.parentReference.driveId)||'')+'/'+(it.id||'')]={driveId:(it.parentReference&&it.parentReference.driveId)||'',id:it.id,name:x.name||it.name||'(無題)'};
     });
   }catch(e){}
   try{
     const j2=await (await gFetch(GRAPH+'/me/drive/root/children')).json();
     (j2.value||[]).forEach(x=>{
-      if(x.remoteItem&&x.remoteItem.folder&&!x.deleted)
-        if(/vault/i.test(x.name||''))return;cands[(x.remoteItem.parentReference.driveId||'')+'/'+x.remoteItem.id]={driveId:x.remoteItem.parentReference.driveId,id:x.remoteItem.id,name:x.name||'(無題)'};
+      if(!x.remoteItem||!x.remoteItem.folder||x.deleted||/vault/i.test(x.name||'')) return;
+      cands[(x.remoteItem.parentReference.driveId||'')+'/'+x.remoteItem.id]={driveId:x.remoteItem.parentReference.driveId,id:x.remoteItem.id,name:x.name||'(無題)'};
     });
   }catch(e){}
   const list=Object.values(cands);
@@ -2869,6 +2870,6 @@ try{document.addEventListener('click',function(e){var b=e.target&&e.target.close
 try{window.addEventListener('unhandledrejection',function(e){try{odNote('エラー：'+String((e.reason&&e.reason.message)||e.reason).slice(0,200),true)}catch(_){}})}catch(e){}
 /*SYNCFIX*/
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+
 </body>
 </html>
