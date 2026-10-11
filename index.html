@@ -574,6 +574,9 @@ header .search input:focus{background:#fff;border-color:rgba(31,44,73,.5)}
 .og-h.og-hq{background:#FBEDEE;color:#C2403A}
 .og-h.og-all{background:#E8EDF6;color:#2C3D63}
 .og-e{border:1px dashed #D8DDE2;border-radius:8px;min-height:24px}
+
+.pm-btn,.pm-btn.on{color:#1F2C49!important}
+@media (max-width:700px){*,*::before,*::after{min-width:0!important}html,body{overflow-x:hidden}}
 </style>
 </head>
 <body>
@@ -2494,7 +2497,7 @@ document.body.insertAdjacentHTML('afterbegin',`<div class="overlay" id="odOverla
 const LS_OD_CFG='meishicho.od.cfg.v1', LS_OD_SNAP='meishicho.od.snap.v1', LS_OD_SCOPE='meishicho.od.scope.v1';
 const OD_AUTH='https://login.microsoftonline.com/consumers';
 const GRAPH='https://graph.microsoft.com/v1.0';
-let odCfg={clientId:'',shared:null};
+let odCfg={clientId:'',shared:null};if(!odCfg.clientId)odCfg.clientId='0f33bab5-2cfc-40a4-8831-384d2dc786a8';
 try{ Object.assign(odCfg,JSON.parse(store.get(LS_OD_CFG)||'{}')) }catch(e){}
 let odScopeDefault=store.get(LS_OD_SCOPE)||'private';
 let odSnap={cards:{},settings:''};
@@ -2778,7 +2781,7 @@ async function odPickShared(){
   if(!odReady()){ odNote('先にサインインしてください',true); return }
   const cands={};
   try{
-    const j=await (await gFetch(GRAPH+'/me/drive/sharedWithMe')).json();
+    const j=await (async()=>{ const out=[];try{ const s=await (await gFetch(GRAPH+'/me/drive/sharedWithMe')).json(); (s.value||[]).forEach(f=>{ if(f.folder) out.push(f) }) }catch(e){}try{ const r=await (await gFetch(GRAPH+'/me/drive/root/children?$top=100')).json(); (r.value||[]).forEach(f=>{ if(f.folder) out.push(f) }) }catch(e){}return {value:out} })();
     (j.value||[]).forEach(x=>{
       const it=x.remoteItem||x;
       if((it.folder||(x.remoteItem&&x.remoteItem.folder))&&!x.deleted)
@@ -2800,6 +2803,7 @@ async function odPickShared(){
   el._cands=list;
 }
 function openOdCfg(){
+ try{var _o=document.getElementById('odOverlay');_o.classList.remove('hidden');_o.style.display='';}catch(e){}
   document.getElementById('odClientId').value=odCfg.clientId||'';
   document.getElementById('odSharedName').textContent=odCfg.shared?('共有フォルダー：'+odCfg.shared.name):'共有フォルダー：未選択（個人の名刺だけなら選ばなくてOK）';
   document.getElementById('odMe').textContent=odAccount?(odMe||odAccount.username)+' で接続中':'未接続';
@@ -2851,6 +2855,10 @@ odChip(); odToolbar();
 window.openOdCfg=openOdCfg; window.odSync=odSync;
 /*ONEDRIVE_END*/
 
+try{document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('.d-close'):null;if(!b)return;var o=document.getElementById('odOverlay');if(o){o.classList.remove('open');o.classList.add('hidden');o.style.display='none'}}
+,true);}catch(e){}
+
+/*odCloseFix*/
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
