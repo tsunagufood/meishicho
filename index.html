@@ -577,6 +577,11 @@ header .search input:focus{background:#fff;border-color:rgba(31,44,73,.5)}
 
 .pm-btn,.pm-btn.on{color:#1F2C49!important}
 @media (max-width:700px){*,*::before,*::after{min-width:0!important}html,body{overflow-x:hidden}}
+
+/* 写真の名刺は1行2枚、全体を表示 */
+#grid.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+#grid.photo-grid .pc-img{object-fit:contain;background:#F5F3EA}
+@media(max-width:700px){#grid.photo-grid{gap:10px}#grid.photo-grid .pc-cap{padding:8px}#grid.photo-grid .pc-n{font-size:13px}}
 </style>
 </head>
 <body>
@@ -1244,6 +1249,7 @@ function bindOpen(el){
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(el.dataset.id)} });
 }
 function render(){
+  $('#grid').classList.toggle('photo-grid',state.view==='card'&&photoOn());
   renderCatTabs();
   renderChips();
   const list=filtered().filter(c=>!$('#coSel').value||coKey(c)===$('#coSel').value);
