@@ -1,0 +1,2874 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>つなぐフード名刺帳（OneDrive共有版） — 名刺管理</title>
+<meta name="description" content="ブラウザだけで使える名刺管理アプリ。名刺をカードとして登録・検索・整理できます。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='6' width='52' height='52' rx='10' fill='%23C2403A'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='%23FCFBF7' font-family='serif' font-weight='700'%3E名%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --porcelain:#EDF0F2;
+  --card-face:#FDFCF8;
+  --card-face2:#F5F3EA;
+  --ink:#242A33;
+  --ink-soft:#6A7380;
+  --indigo:#E8EDF6;
+  --indigo-deep:#DCE4F0;
+  --vermilion:#C2403A;
+  --line:#D8DDE2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+  background:var(--porcelain);color:var(--ink);min-height:100vh;
+  background-image:radial-gradient(rgba(31,44,73,.045) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font:inherit}
+img{max-width:100%}
+:focus-visible{outline:2px solid var(--vermilion);outline-offset:2px}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+
+/* ───────── header ───────── */
+header{
+  position:sticky;top:0;z-index:40;background:var(--indigo-deep);color:#fff;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:12px clamp(16px,4vw,36px);
+  box-shadow:0 2px 12px rgba(15,23,42,.22);
+}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+.brand-seal{
+  width:36px;height:36px;flex:none;background:var(--vermilion);color:#FDFCF8;
+  font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:20px;
+  display:grid;place-items:center;border-radius:7px;transform:rotate(-3deg);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.32);
+}
+.brand h1{font-family:'Shippori Mincho B1',serif;font-size:19px;font-weight:700;letter-spacing:.1em;line-height:1.15}
+.brand .sub{display:block;font-size:9.5px;letter-spacing:.34em;color:rgba(255,255,255,.55);font-weight:500}
+.search{display:flex;align-items:stretch}
+.search-in{position:relative}
+.search select{
+  border:1px solid rgba(255,255,255,.24);border-right:0;background:rgba(255,255,255,.1);
+  color:#fff;border-radius:8px 0 0 8px;padding:0 8px;font-size:12.5px;
+}
+.search select option{color:var(--ink)}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;fill:none;stroke:rgba(255,255,255,.55);stroke-width:2}
+.search input{
+  width:min(280px,44vw);padding:9px 12px 9px 34px;border-radius:0 8px 8px 0;
+  border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.1);color:#fff;font-size:13.5px;
+}
+.search input::placeholder{color:rgba(255,255,255,.48)}
+.search input:focus{outline:none;background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.55)}
+.h-actions{display:flex;align-items:center;gap:10px}
+.h-menu{position:relative}
+.menu-pop{
+  position:absolute;right:0;top:calc(100% + 8px);min-width:224px;z-index:70;
+  background:#fff;color:var(--ink);border-radius:11px;padding:6px;
+  box-shadow:0 16px 44px rgba(15,23,42,.28);display:none;
+}
+.menu-pop.open{display:block}
+.menu-pop button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:7px;font-size:13.5px}
+.menu-pop button:hover{background:var(--porcelain)}
+.menu-pop hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
+.menu-pop .danger{color:var(--vermilion)}
+
+/* ───────── buttons ───────── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;border-radius:8px;
+  padding:9px 16px;font-weight:700;font-size:13.5px;line-height:1;
+  transition:filter .15s,background .15s,border-color .15s;
+}
+.btn.primary{background:var(--vermilion);color:#fff}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.subtle{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.btn.subtle:hover{border-color:var(--indigo)}
+.btn.danger{background:#fff;border:1px solid #E0BBB6;color:var(--vermilion)}
+.btn.danger:hover{background:#FBF1EF}
+.btn.icon{padding:9px 11px}
+
+/* ───────── banner / toolbar ───────── */
+.banner{
+  display:none;align-items:center;gap:12px;flex-wrap:wrap;
+  background:#F8EEEA;border-bottom:1px solid #EBD6CD;
+  padding:9px clamp(16px,4vw,36px);font-size:13px;
+}
+.banner.show{display:flex}
+.banner .b-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.banner button{font-size:12.5px;font-weight:700;color:var(--vermilion);text-decoration:underline;text-underline-offset:3px}
+.banner .b-close{color:var(--ink-soft);text-decoration:none;font-size:16px;line-height:1;padding:2px 6px}
+.toolbar{
+  display:none;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px clamp(16px,4vw,36px);border-bottom:1px solid var(--line);
+}
+.toolbar.show{display:flex}
+.count{font-size:13px;color:var(--ink-soft);font-weight:700;white-space:nowrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  border:1px solid var(--line);background:#fff;border-radius:999px;
+  padding:4.5px 12px;font-size:12px;color:var(--ink-soft);transition:.15s;
+}
+.chip b{font-weight:900;color:inherit;opacity:.55;margin-left:2px}
+.chip:hover{border-color:var(--indigo);color:var(--indigo)}
+.chip.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.chip.on b{opacity:.75}
+.toolbar select{
+  margin-left:0;border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;background:#fff;font-size:12.5px;color:var(--ink);
+}
+
+/* ───────── grid & meishi card ───────── */
+main{padding:28px clamp(16px,4vw,36px) 64px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:26px 28px}
+.grid>article{animation:fadeUp .45s both;animation-delay:calc(var(--i,0)*35ms)}from{opacity:0;transform:translateY(10px)}
+
+.meishi{
+  container-type:size;position:relative;aspect-ratio:91/55;
+  border-radius:8px;overflow:hidden;cursor:pointer;
+  background:linear-gradient(160deg,var(--card-face),var(--card-face2));
+  border:1px solid rgba(31,44,73,.07);
+  box-shadow:0 1px 2px rgba(31,44,73,.10),0 10px 26px rgba(31,44,73,.12);
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+.meishi:hover{transform:translateY(-4px);box-shadow:0 2px 4px rgba(31,44,73,.10),0 18px 36px rgba(31,44,73,.17)}
+.meishi::after{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(31,44,73,.016) 3px 4px);
+}
+.meishi.static{cursor:default}
+.meishi.static:hover{transform:none}
+.m-co{
+  position:absolute;top:6cqw;left:5.4cqw;right:27cqw;
+  font-size:14px;font-size:3.5cqw;font-weight:700;letter-spacing:.05em;line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.m-side{
+  position:absolute;top:8.5cqw;right:5.6cqw;max-height:72cqw;overflow:hidden;
+  display:flex;flex-direction:row-reverse;gap:2.6cqw;align-items:flex-start;
+}
+.m-name{
+  writing-mode:vertical-rl;text-orientation:mixed;
+  font-family:'Shippori Mincho B1','Hiragino Mincho ProN','Yu Mincho',serif;
+  font-weight:700;font-size:20px;font-size:6.6cqw;letter-spacing:.1em;line-height:1.2;
+}
+.m-name.long{font-size:5.6cqw}
+.m-name.xlong{font-size:4.7cqw}
+.m-name.lat{writing-mode:horizontal-tb;text-align:right;font-size:5.4cqw;max-width:30cqw;line-height:1.35}
+.m-dept{
+  writing-mode:vertical-rl;font-size:9px;font-size:2.9cqw;color:var(--ink-soft);
+  letter-spacing:.14em;padding-top:1.4cqw;max-height:60cqw;overflow:hidden;line-height:1.7;
+}
+.m-dept.lat{writing-mode:horizontal-tb;text-align:right;max-width:26cqw;line-height:1.5}
+.m-reading{
+  writing-mode:vertical-rl;font-size:8px;font-size:2.6cqw;color:#9AA2AC;
+  letter-spacing:.16em;padding-top:.8cqw;max-height:60cqw;overflow:hidden;
+}
+.m-rule{
+  position:absolute;top:17.5cqw;left:5.4cqw;width:42cqw;height:.4cqw;
+  background:linear-gradient(90deg,rgba(44,61,99,.38),rgba(44,61,99,.06));
+}
+.m-contact{
+  position:absolute;left:5.4cqw;bottom:4.8cqw;right:24cqw;
+  font-size:9px;font-size:2.85cqw;color:var(--ink-soft);line-height:1.75;letter-spacing:.02em;
+  overflow:hidden;
+}
+.m-seal{
+  position:absolute;right:5.2cqw;bottom:4.6cqw;width:7.8cqw;height:7.8cqw;
+  background:var(--vermilion);color:#FDFCF8;
+  font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:4.7cqw;
+  display:grid;place-items:center;border-radius:1.2cqw;transform:rotate(-4deg);
+  box-shadow:inset 0 0 0 .5cqw rgba(255,255,255,.3);
+}
+
+/* back side of a card (detail view) */
+.backbody{position:absolute;inset:7cqw 6cqw;display:flex;flex-direction:column;gap:2.6cqw}
+.b-img{width:100%;height:20cqw;object-fit:cover;border-radius:1.4cqw}
+.b-head{display:flex;align-items:center;gap:2cqw;flex-wrap:wrap;font-size:2.9cqw;color:var(--ink-soft);font-weight:700}
+.pill{
+  display:inline-block;border:1px solid var(--line);border-radius:999px;
+  padding:.5cqw 2.4cqw;font-size:2.7cqw;font-weight:700;color:var(--indigo);background:#fff;
+}
+.b-memo{flex:1;font-size:3.1cqw;line-height:1.8;white-space:pre-wrap;overflow:hidden;word-break:break-word}
+.b-memo.placeholder{color:var(--ink-soft)}
+.b-foot{font-size:2.7cqw;color:var(--ink-soft);line-height:1.7}
+
+/* ───────── empty state ───────── */
+.empty{display:none;max-width:560px;margin:7vh auto 0;text-align:center;padding:20px}
+.empty.show{display:block}
+.empty .seal-big{
+  width:64px;height:64px;margin:0 auto 20px;background:var(--vermilion);color:#FDFCF8;
+  font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:34px;
+  display:grid;place-items:center;border-radius:12px;transform:rotate(-4deg);
+  box-shadow:inset 0 0 0 2.5px rgba(255,255,255,.32),0 12px 26px rgba(194,64,58,.3);
+}
+.empty h2{font-family:'Shippori Mincho B1',serif;font-size:22px;letter-spacing:.06em;margin-bottom:10px}
+.empty p{font-size:13.5px;color:var(--ink-soft);line-height:1.9;margin-bottom:24px}
+.empty .e-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ───────── overlays / dialogs ───────── */
+.overlay{
+  position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  background:rgba(31,44,73,.5);padding:18px;
+}
+.overlay.open{display:flex}
+.dialog{
+  background:#fff;border-radius:14px;width:100%;max-height:94vh;overflow:auto;
+  box-shadow:0 28px 70px rgba(15,23,42,.35);position:relative;
+}
+.d-close{
+  position:absolute;top:10px;right:10px;z-index:5;width:34px;height:34px;border-radius:50%;
+  display:grid;place-items:center;font-size:17px;color:var(--ink-soft);background:rgba(255,255,255,.85);
+  border:1px solid var(--line);
+}
+.d-close:hover{color:var(--ink)}
+.dialog-head{
+  font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:17px;letter-spacing:.06em;
+  padding:18px 26px 0;
+}
+
+/* detail */
+.detail-body{display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:28px;padding:22px 26px 26px}.detail-body{grid-template-columns:1fr}
+.flip{perspective:1400px;max-width:440px;margin:0 auto;width:100%}
+.flip-inner{position:relative;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.25,.7,.3,1)}
+.flip.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-face{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip-face.back{position:absolute;inset:0;transform:rotateY(180deg)}
+.flip-hint{margin-top:14px;text-align:center}
+.flip-hint button{font-size:12.5px;font-weight:700;color:var(--indigo);text-decoration:underline;text-underline-offset:3px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-content:start}
+.field{min-width:0}
+.field.full{grid-column:1/-1}
+.field label{
+  display:block;font-size:10.5px;letter-spacing:.14em;font-weight:700;
+  color:var(--ink-soft);margin-bottom:3px;
+}
+.field .v{font-size:14px;word-break:break-word;line-height:1.55}
+.field .v.copyable{cursor:pointer;border-bottom:1px dashed #B9C2CB}
+.field .v.copyable:hover{color:var(--indigo);border-color:var(--indigo)}
+.d-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+/* form */
+.form-dialog{max-width:700px}
+.form-body{padding:18px 26px 26px}
+.form-err{
+  display:none;background:#FBF1EF;border:1px solid #E0BBB6;color:var(--vermilion);
+  border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:14px;
+}
+.form-err.show{display:block}
+.f-section{
+  font-size:11px;font-weight:900;letter-spacing:.22em;color:var(--indigo);
+  margin:18px 0 10px;display:flex;align-items:center;gap:10px;
+}
+.f-section::after{content:'';flex:1;border-top:1px solid var(--line)}
+.f-section:first-child{margin-top:0}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}.fgrid{grid-template-columns:1fr}
+.f label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
+.f label .req{color:var(--vermilion)}
+.f input,.f textarea,.f select{
+  width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;
+  background:#fff;font-size:14px;color:var(--ink);
+}
+.f input:focus,.f textarea:focus,.f select:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(44,61,99,.12)}
+.f textarea{min-height:88px;resize:vertical}
+.f.full{grid-column:1/-1}
+.img-prev{display:none;margin-top:8px}
+.img-prev.show{display:block}
+.img-prev img{max-height:110px;border-radius:8px;border:1px solid var(--line)}
+.img-prev button{margin-left:10px;font-size:12px;color:var(--vermilion);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+
+/* ───────── category tabs ───────── */
+.cattabs{
+  display:none;gap:2px;overflow-x:auto;scrollbar-width:none;
+  padding:0 clamp(16px,4vw,36px);background:#fff;border-bottom:1px solid var(--line);
+}
+.cattabs.show{display:flex}
+.cattab{
+  padding:13px 14px 10px;font-size:13.5px;font-weight:700;color:var(--ink-soft);white-space:nowrap;
+  border-bottom:3px solid transparent;display:inline-flex;align-items:center;gap:7px;
+}
+.cattab:hover{color:var(--ink)}
+.cattab.on{color:var(--ink);border-bottom-color:var(--cat,var(--indigo))}
+.cattab .dot{width:9px;height:9px;border-radius:2px;background:var(--cat)}
+.cattab .n{font-size:11px;font-weight:900;color:var(--ink-soft);background:var(--porcelain);border-radius:999px;padding:1px 8px}
+.cattab.manage{margin-left:auto;color:var(--indigo);font-weight:500;font-size:12.5px}
+.t-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{padding:7px 12px;font-size:12.5px;color:var(--ink-soft)}
+.seg button.on{background:var(--indigo);color:#fff}
+.chip.fav.on{background:#A88A3F;border-color:#A88A3F;color:#fff}
+
+/* category marks on a card */
+.meishi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1.1cqw;background:var(--cat,transparent);z-index:1}
+.m-cat{position:absolute;left:5.4cqw;top:2.2cqw;font-size:2.4cqw;font-weight:900;letter-spacing:.14em;color:var(--cat,var(--ink-soft))}
+.m-star{position:absolute;top:2cqw;right:3cqw;font-size:3.8cqw;color:#B8994D;line-height:1}
+
+/* list view */
+.listwrap{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:auto}
+table.list{width:100%;border-collapse:collapse;font-size:13.5px;min-width:860px}
+.list th{
+  text-align:left;font-size:11px;letter-spacing:.12em;color:var(--ink-soft);font-weight:700;
+  padding:11px 14px;border-bottom:1px solid var(--line);background:#F7F8F9;white-space:nowrap;
+}
+.list td{padding:10px 14px;border-bottom:1px solid #EEF0F2;vertical-align:middle}
+.list tr.row{cursor:pointer}
+.list tr.row:hover td,.list tr.row:focus-visible td{background:#F4F7FB}
+.list .nm{font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:15px;white-space:nowrap}
+.list .rd{font-size:11px;color:var(--ink-soft);margin-top:1px}
+.list .star{color:#B8994D;width:28px;text-align:center}
+.catbadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.catbadge i{width:9px;height:9px;border-radius:2px;background:var(--cat)}
+
+/* category manager & form extras */
+.cat-dialog{max-width:520px}
+.catrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #EEF0F2}
+.catrow .sw{width:14px;height:14px;border-radius:3px;background:var(--cat);flex:none}
+.catrow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:14px}
+.catrow .cnt{font-size:12px;color:var(--ink-soft);width:44px;text-align:right}
+.catrow button{font-size:12px;color:var(--vermilion);font-weight:700}
+.catadd{display:flex;gap:8px;margin-top:14px}
+.catadd input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:14px}
+.hint{font-size:12px;color:var(--ink-soft);line-height:1.8;margin-top:12px}
+.f .f-check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);font-weight:500;height:40px;margin:0}
+.f .f-check input{width:auto}
+
+/* ───────── company groups ───────── */
+.cgroup{margin-bottom:30px}
+.cg-head{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer;list-style:none;
+  padding:0 2px 11px;margin-bottom:18px;border-bottom:1px solid var(--line);
+}
+.cg-head::-webkit-details-marker{display:none}
+.cg-arrow{font-size:12px;color:var(--ink-soft);transition:transform .15s;display:inline-block}
+.cgroup[open] .cg-arrow{transform:rotate(90deg)}
+.cg-head h3{font-family:'Shippori Mincho B1',serif;font-size:17px;font-weight:700;letter-spacing:.04em}
+.cg-count{font-size:12px;font-weight:900;color:#fff;background:var(--indigo);border-radius:999px;padding:2px 10px}
+.cg-btn{margin-left:auto;font-size:12px;font-weight:700;color:var(--indigo);text-decoration:underline;text-underline-offset:3px}
+.cgroup:not([open]) .cg-head{margin-bottom:0}
+.same{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.same-p{
+  border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fff;text-align:left;
+  font-size:13px;font-weight:700;line-height:1.35;
+}
+.same-p small{display:block;font-size:11px;font-weight:400;color:var(--ink-soft)}
+.same-p:hover{border-color:var(--indigo)}
+.same-all{font-size:12px;font-weight:700;color:var(--indigo);text-decoration:underline;text-underline-offset:3px;padding:4px}
+
+/* ───────── inline edit / history ───────── */
+.field .v{white-space:pre-wrap}
+.ef-btn{margin-left:4px;font-size:11px;color:var(--ink-soft);opacity:.5;padding:0 5px;border-radius:4px;letter-spacing:0}
+.field:hover .ef-btn,.ef-btn:focus-visible{opacity:1;color:var(--indigo)}.ef-btn{opacity:.85}
+.ef-add{font-size:12.5px;color:#9AA2AC;border:1px dashed #C9D0D6;border-radius:6px;padding:3px 10px}
+.ef-add:hover{color:var(--indigo);border-color:var(--indigo)}
+.field.editing{background:#F4F7FB;box-shadow:0 0 0 7px #F4F7FB;border-radius:2px}
+.ef-in{width:100%;border:1px solid var(--indigo);border-radius:7px;padding:7px 9px;font-size:14px;background:#fff;color:var(--ink)}
+textarea.ef-in{min-height:70px;resize:vertical}
+.ef-acts{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.btn.sm{padding:6px 11px;font-size:12px}
+.ef-hint{font-size:11px;color:var(--ink-soft)}
+.ef-more{font-size:12.5px;font-weight:700;color:var(--indigo);text-decoration:underline;text-underline-offset:3px}
+.hist-add{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.hist-add input{border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13.5px;background:#fff;color:var(--ink)}
+.hist-add input[type=date]{width:150px}
+.hist-add input[type=text]{flex:1;min-width:160px}
+.hist-list{list-style:none;display:flex;flex-direction:column}
+.hist-list li{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px dashed #E3E7EA;font-size:13.5px}
+.hist-list time{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;font-weight:700;min-width:100px}
+.hist-list .ht{flex:1;white-space:pre-wrap;word-break:break-word}
+.hist-list button{font-size:11.5px;color:var(--ink-soft);white-space:nowrap}
+.hist-list button[data-hdel]{color:var(--vermilion)}
+.hist-empty{font-size:12.5px;color:#9AA2AC;padding:4px 0}
+.updated{grid-column:1/-1;font-size:11.5px;color:var(--ink-soft);text-align:right}
+.link-btn{font-size:12.5px;font-weight:700;color:var(--indigo);text-decoration:underline;text-underline-offset:3px;margin-top:10px}
+
+/* ───────── sheet view (card + text) ───────── */
+.srow{
+  display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:26px;
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;
+}.srow{grid-template-columns:1fr;padding:16px}
+.s-photo{display:block;width:100%;margin-top:12px;border-radius:8px;border:1px solid var(--line)}
+.s-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.srow .fields{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.srow:not(.show-empty) .empty-f{display:none}@media print{
+  body{background:#fff}
+  header,.banner,.cattabs,.toolbar,footer,.ef-btn,.ef-add,.ef-more,.hist-add,.s-acts,.hist-list button,.empty-f,.toast,.overlay,#noResult{display:none!important}
+  main{padding:0}
+  .srow{break-inside:avoid;border-color:#ccc}
+  .meishi{box-shadow:none;border:1px solid #ccc}}
+
+/* ───────── mail & NI Collabo 360 ───────── */
+.mail-btn{
+  margin-left:8px;font-size:11.5px;font-weight:700;color:#fff;background:var(--indigo);
+  border-radius:6px;padding:3px 9px;white-space:nowrap;vertical-align:1px;
+}
+.mail-btn:hover{filter:brightness(1.15)}
+.cp-row{display:flex;gap:8px;align-items:center}
+.cp-row input{flex:1;min-width:0}
+.cp-row.end{justify-content:flex-end;margin-top:6px}
+.mail-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.wide-dialog{max-width:780px}
+.cb-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:6px}.cb-opts{grid-template-columns:1fr}
+.cb-opts select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;font-size:13.5px}
+.cb-opts label.ck{display:flex;gap:8px;align-items:center;font-size:13px}
+.cb-map{width:100%;border-collapse:collapse;font-size:13px}
+.cb-map th{text-align:left;font-size:11px;color:var(--ink-soft);padding:6px;border-bottom:1px solid var(--line)}
+.cb-map td{padding:5px 6px;border-bottom:1px solid #EEF0F2}
+.cb-map input,.cb-map select{width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:13px;background:#fff}
+.cb-map td.x{width:40px;text-align:center}
+.cb-map td.x button{color:var(--vermilion);font-size:15px}
+.cb-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.cb-prev{overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:8px;max-height:180px}
+.cb-prev table{border-collapse:collapse;font-size:11.5px;white-space:nowrap}
+.cb-prev th,.cb-prev td{padding:5px 8px;border-bottom:1px solid #EEF0F2;border-right:1px solid #EEF0F2;text-align:left}
+.cb-prev th{background:#F7F8F9;color:var(--ink-soft)}
+.cb-src{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+.cb-src.ok{color:#2F7D6B;font-weight:700}
+
+/* ───────── camera scan (OCR) ───────── */
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.btn.cam{background:#fff;color:var(--indigo-deep)}
+.btn.cam:hover{background:#EEF3F8}
+.btn:disabled{opacity:.55;cursor:wait}
+.scan-dialog{max-width:620px}
+.scan-step{display:none}
+.scan-step.on{display:block}
+.scan-pick{display:grid;grid-template-columns:1fr 1fr;gap:12px}.scan-pick{grid-template-columns:1fr}
+.pick{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;
+  border:1.5px dashed #B9C2CB;border-radius:12px;padding:26px 12px;cursor:pointer;
+  font-weight:700;font-size:14.5px;color:var(--indigo);background:#F7F9FB;transition:.15s;
+}
+.pick:hover,.pick:focus-within{border-color:var(--indigo);background:#EEF3F8}
+.pick svg{width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linejoin:round}
+.pick small{font-weight:500;color:var(--ink-soft);font-size:11.5px}
+.scan-tips{margin-top:14px;font-size:12.5px;color:var(--ink-soft);line-height:1.9;background:var(--porcelain);border-radius:10px;padding:10px 14px}
+.scan-tips b{color:var(--ink)}
+.scan-prev{text-align:center;background:var(--indigo-deep);border-radius:12px;padding:12px}
+.scan-prev canvas{max-width:100%;max-height:300px;border-radius:6px;display:inline-block;vertical-align:middle}
+.scan-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.scan-row select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;font-size:13px;margin-left:auto}
+.progress{height:8px;background:var(--porcelain);border-radius:99px;overflow:hidden;margin-top:16px}
+.progress i{display:block;height:100%;width:0;background:var(--indigo);transition:width .2s}
+.scan-status{font-size:12.5px;color:var(--ink-soft);margin-top:10px;line-height:1.7}
+.scan-status.err{color:var(--vermilion);font-weight:700}
+.ocr-table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+.ocr-table th{text-align:left;font-size:11px;color:var(--ink-soft);width:116px;padding:7px 8px;border-bottom:1px solid #EEF0F2;font-weight:700;letter-spacing:.08em}
+.ocr-table td{padding:7px 8px;border-bottom:1px solid #EEF0F2;word-break:break-all}
+.ocr-table td.none{color:#B0B7BF}
+details.raw{margin-top:12px;font-size:12.5px;color:var(--ink-soft)}
+details.raw summary{cursor:pointer;font-weight:700}
+details.raw textarea{width:100%;min-height:120px;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12.5px;color:var(--ink)}
+.f input.ocr,.f textarea.ocr{background:#FFF8DB;border-color:#E6CF7A}
+.ocr-note{display:none;background:#FFF8DB;border:1px solid #E6CF7A;border-radius:8px;padding:9px 13px;font-size:12.5px;margin-bottom:14px;line-height:1.7}
+.ocr-note.show{display:block}
+
+/* ───────── toast / footer ───────── */
+.toast{
+  position:fixed;left:50%;bottom:30px;z-index:99;pointer-events:none;
+  transform:translateX(-50%) translateY(16px);opacity:0;transition:.25s;
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;
+  font-size:13px;box-shadow:0 10px 30px rgba(15,23,42,.35);max-width:88vw;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{
+  text-align:center;font-size:11.5px;color:var(--ink-soft);
+  padding:0 20px 44px;line-height:2;
+}
+.mail-btn.collabo{background:var(--indigo,#E8EDF6);color:#DCE4F0;border-color:#DCE4F0}
+.mail-btn.collabo:active{transform:translateY(1px)}
+.tl-month{margin:0 0 5mm;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(31,44,73,.06)}
+.tl-mh{display:flex;align-items:baseline;justify-content:space-between;gap:4mm;padding:2.8mm 4mm;background:#EFE8D8;border-bottom:1px solid var(--line);border-left:4px solid #E8EDF6}
+.tl-mlab{font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:12pt;color:#DCE4F0;letter-spacing:.02em}
+.tl-mcnt{font-size:9pt;color:#6A7380;white-space:nowrap}
+.tl-body{position:relative;padding:2.6mm 3.5mm 3mm 3.5mm}
+.tl-body::before{content:'';position:absolute;left:6.2mm;top:3mm;bottom:3mm;width:1px;background:var(--line)}
+.tl-row{position:relative;display:block;width:100%;text-align:left;background:none;border:none;padding:2.8mm 0 2.8mm 6.5mm;cursor:pointer;font:inherit}
+.tl-dot{position:absolute;left:4.7mm;top:4mm;width:3mm;height:3mm;border-radius:50%;background:#fff;border:2px solid #E8EDF6;box-sizing:border-box}
+.tl-top{display:flex;align-items:baseline;gap:2.5mm;flex-wrap:wrap}
+.tl-row:hover{background:#FDFCF8}
+.tl-day{display:inline-block;min-width:17mm;font-weight:700;color:#E8EDF6;font-size:9.5pt;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tl-n{font-weight:700;color:#242A33;font-size:10.5pt}
+.tl-t{display:block;margin-top:.8mm;color:#3A424D;font-size:10pt;line-height:1.55}
+.tl-co{color:#E8EDF6;text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-weight:500;font-size:9.5pt;margin-left:2mm}
+.tl-co:hover{color:#C2403A}
+.tl-back{display:inline-block;margin:0 0 3mm;padding:1.8mm 4mm;background:#fff;border:1px solid var(--line);border-radius:999px;font:inherit;font-size:9.5pt;color:#E8EDF6;cursor:pointer}
+.tl-back:hover{border-color:#E8EDF6}
+.ct-hero{background:#F5F3EA;border:1px solid var(--line);border-left:4px solid #E8EDF6;border-radius:10px;padding:3.5mm 4mm;margin-bottom:5mm}
+.ct-co{font-family:'Shippori Mincho B1',serif;font-size:16pt;color:#DCE4F0;margin:0 0 1.5mm}
+.ct-meta{font-size:9pt;color:#6A7380;margin:0 0 2.5mm}
+.ct-chips{display:flex;flex-wrap:wrap;gap:1.5mm}
+.ct-chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:1.2mm 3.5mm;font:inherit;font-size:9.5pt;font-weight:700;color:#E8EDF6;cursor:pointer}
+.ct-chip:hover{border-color:#E8EDF6}
+.ct-chip.more{cursor:default;font-weight:400;color:#6A7380}
+.pm-bar{grid-column:1/-1;display:flex;align-items:center;gap:3mm;margin:0 0 2mm}
+.pm-btn{background:#fff;border:1px solid var(--line);border-radius:999px;padding:1.6mm 4mm;font:inherit;font-size:9.5pt;color:#E8EDF6;cursor:pointer}
+.pm-btn.on{background:#E8EDF6;color:#DCE4F0;border-color:#E8EDF6}
+.pm-hint{font-size:8.5pt;color:#6A7380}
+.pcard{display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;box-shadow:0 1px 3px rgba(31,44,73,.06)}
+.pcard:hover{border-color:#E8EDF6}
+.pc-imgwrap{position:relative}
+.pc-img{width:100%;display:block;aspect-ratio:1.58/1;object-fit:cover}
+.pc-cat{position:absolute;top:1.6mm;left:1.6mm;background:rgba(31,44,73,.85);color:#fff;font-size:8pt;padding:.7mm 2.2mm;border-radius:999px;letter-spacing:.03em}
+.pc-fav{position:absolute;top:1.2mm;right:1.8mm;color:#C2403A;font-size:11pt;text-shadow:0 0 2px #fff}
+.pc-none{display:flex;align-items:center;justify-content:center;aspect-ratio:1.58/1;color:#6A7380;font-size:9pt;background:#F5F3EA}
+.pc-cap{padding:2mm 2.6mm 2.2mm;display:block}
+.pc-n{display:block;font-weight:700;color:#242A33;font-size:10.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-co{display:block;margin-top:.7mm;color:#6A7380;font-size:8.5pt;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cg-meta{display:flex;gap:3mm;align-items:center;margin-left:2mm;min-width:0;overflow:hidden}
+.cg-tel{font-size:9pt;color:#E8EDF6;font-weight:700;white-space:nowrap}
+.cg-addr{font-size:8.5pt;color:#6A7380;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:48mm}
+.tl-co2{margin:1.5mm 0 .8mm;font-size:9.5pt;font-weight:700;color:#E8EDF6;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.tl-co2:first-child{margin-top:0}
+.tl-co2:hover{color:#C2403A}
+.tl-sec{margin:0 0 8mm}
+.tl-coh{display:flex;align-items:baseline;justify-content:space-between;gap:3mm;margin:0;padding:3.2mm 4.5mm;background:#DCE4F0;color:#DCE4F0;border-radius:12px;cursor:pointer;list-style:none}
+.tl-con{font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:14pt;letter-spacing:.02em}
+.tl-coc{font-size:9.5pt;color:#C9D2E0;white-space:nowrap}
+.tl-coh:hover .tl-con{text-decoration:underline;text-underline-offset:2px}
+.m-office{color:#242A33;font-size:2.1cqw;font-weight:600;letter-spacing:.02em;margin-left:.4cqw}
+.tl-off{display:flex;align-items:center;gap:2mm;font-size:10pt;font-weight:700;color:#DCE4F0;margin:3mm 0 1.5mm;border-left:3px solid #C2403A;padding:1mm 0 1mm 2mm;cursor:pointer;list-style:none}
+.tl-sec>.tl-off:first-child{margin-top:0}
+.tl-arr{display:inline-block;transition:transform .2s;flex:none}
+details[open]>.tl-coh .tl-arr,details[open]>.tl-off .tl-arr{transform:rotate(90deg)}
+summary.tl-coh::-webkit-details-marker,summary.tl-off::-webkit-details-marker{display:none}
+.tl-open{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:1mm 3mm;font:inherit;font-size:8.5pt;cursor:pointer;white-space:nowrap}
+.tl-open:hover{background:rgba(255,255,255,.28)}
+
+/* 事業所を横並び */
+.offgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;align-items:start}
+/* 本社・全体列 */
+.off-hq{background:#FBEDEE;border-radius:10px;padding:6px 8px}
+.off-hq>.tl-off{color:#C2403A}
+.off-all{background:#EEF1F7;border-radius:10px;padding:6px 8px}
+.off-all>.tl-off{color:#E8EDF6}
+.tl-ocnt{margin-left:8px;font-size:11px;color:#6A7380;font-weight:400}
+.tl-ofs{font-size:11px;color:#C2403A;margin-left:6px;border:1px solid #E7C3C1;border-radius:8px;padding:0 6px;background:#fff;white-space:nowrap}
+/* 明るい配色での文字色調整 */
+header,.brand h1{color:#1F2C49}
+.brand .sub{color:rgba(31,44,73,.6)}
+header .search select,header .search input{color:#242A33;border-color:rgba(31,44,73,.28);background:rgba(255,255,255,.75)}
+header .search input::placeholder{color:rgba(36,42,51,.45)}
+header .search input:focus{background:#fff;border-color:rgba(31,44,73,.5)}
+.seg button.on,.chip.on:not(.fav),.cg-count,.mail-btn{color:#2C3D63}
+.tl-coh,.tl-coh .tl-con,.tl-coh .tl-coc{color:#1F2C49}
+.tl-coh .tl-open{color:#1F2C49;background:rgba(255,255,255,.65);border-color:rgba(31,44,73,.35)}
+.pm-bar button{color:#242A33;border-color:rgba(31,44,73,.3)}
+
+.brand-logo{height:36px;width:auto;border-radius:6px;display:block}
+.tl-day{color:#5A6370}
+.tl-row{padding-left:10mm}
+
+/* 月見出し・会社名の文字を濃く */
+.tl-mh,.tl-mlab,.tl-mcnt,.tl-offwrap .tl-off,.ct-co,.tl-day{color:#1F2C49}
+.off-hq>.tl-off{color:#C2403A}
+.off-all>.tl-off{color:#2C3D63}
+
+/* 月揃えグリッド（会社ページ） */
+.og{display:grid;gap:10px;align-items:stretch}
+.og-h{background:#EEF1F7;color:#1F2C49;font-weight:900;font-size:12.5px;border-radius:8px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between}
+.og-h.og-hq{background:#FBEDEE;color:#C2403A}
+.og-h.og-all{background:#E8EDF6;color:#2C3D63}
+.og-e{border:1px dashed #D8DDE2;border-radius:8px;min-height:24px}
+
+.pm-btn,.pm-btn.on{color:#1F2C49!important}
+@media (max-width:700px){*,*::before,*::after{min-width:0!important}html,body{overflow-x:hidden}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img class="brand-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEwAAABMCAYAAADHl1ErAAAM50lEQVR42u2bbZRV1XnHf3ufl/t+54UZFHApAzFvLa6IjFXQWAQURU0lqZomiE2Eau1amlYBtbDwJYoBYhYCQpL6AssSidJRBKJtqIpYRFFRYQIoKBGcYe7AzL137ts5e+9+OHdGqM2HdnmncXqfT3Nn1j3nnt999rP//2c/IzqPths+E//Nr/7XISp03f4KccIru/IP8kWE9Ic/v6Qa/6OoAqsCqwKrAqsCqwKrRhVYFVgVWBVYFVg1qsCqwKrAqsC+0GH31420NhijATAGxHGNTMuy0FpjjMGyrP/yPo0xYFny/w8wYwyRSIRIJITsAyUwgO9r0uk0iUQcISSZTAZRpmkMJBJJEJDNZBFCoJSPMeYE2EKIgQNMa008HmfDhk08/XQLBU+itQYEtlScMqyRBQvuY8mSZWQyGe64YzbZbA8AiXiCxYt+SqnkMef2WWQyGWpqanAcl6DXrslms5RKpX6DJoJDkMr13X3fZ3DjYP5x7nx+fO99jBkJvg+hEOw7CH54EN3HPmHChItobz/Cu++9RSqVAqCxYTDnjj2PXC7Hm2++Tjab5dFHH6d1124sDFpafH/aXzF69JnkcjmklAOlhmmkHeHkpM3r/xQH7UG95IGlBX7ybC2gSSaT5PJ5PN9DKRXAVh6JZALbttFa4boua55Yw/bX30A2DkV3HGbMmDGce+659PT0DKRdUmCMxvN98j0emZ4SOlsil/f74Hi+jxQC144xqL6OQfV12FYEW0p83w+uYklqIiHqx01i8qPP4DgO8Vi0XNPEwCn6ZWbBDQUYKZBSBjulCDIwFo3y8patXPytb5EvFMBAKBzije1vMubMMzDG4Ps+HR0dqPgQlFJ4nkd7exu2ZZ+wEQwMYMezMwbKEqNvJ7UsZKYbvf1FTKmEQGBcG9GVQQuB68RYvOhe3m7dS/O9t2DV1jNk/GTuvuseLrpkMqecMpRSsfLFv1/FjQho9b04/tl6Sj6jayP8619fxJbvT+DlaRfyb9dPZtzgBDllMMbnkRUP0zD+MhrHX0qpJ8MZN8/laHeWlqfXEY8l+pb3gMswX4ExZVq9/ISgpBWlTA+FfBGDIIKh6Ctsy0Jpj1w2R2zYqSjloXyFHY4hErVkurvpLyXWf8CMwRBkVaJeQFgQlB3TJ25dIXBjLm5vFkZdHCnoMQFQISTa9xFSgABtjncHA6zoGyOQEnIlixn3K26cKkhEBUobjDHEXYutaZ9Ln9hBwfMAcB2H7Z0Fmh2J0jqAe/w6LoMLmA8wYEIKLAHxMHzSaZAaoq75dGlqgXYVPSd34JUCYCZsY7oUwkgQIijoxkDZd/annOhnYAZbCvKe4NVdmgdvlBgHXt8rCYcEAkMmbxjTBJsfjUBX2YA3OFxxbYmjeej13tKxsUMRLDeH7ThgzMADZpBYUtFdMJz/oxLg0buWhg0r4SuwLUgXJB/ssshnJBpJtMaiq8fCSQaCzbIddCZD8eOP8Lq7wLGRRgc1DT0wgFmWRVfXMa69dhpSCObOnc/GTetZcP9POHIkxerVj2GQCJ1nx37Nl67p/Mw1JgwtoHxFXhuOtKzm9y2rT/i7149JVnHzfbwBf27DBq64fCodHZ8wc+YNtLW1s3Xrq3Qea+fwoUMcO9pVLuom0GlIjFLU1NZw2mmnsWfPHorFIgIQwgS7poaThpzMSScNxvf9igvXflmSQgh85ZPryWGMoacnS6FYJJfL4asCtmXx/r4P2Lf3fYxfwlAu6AaE7TJy5Aiahg9n59vvkMl04ymB52uklFgo/uycsxk2bCie51UcWL9kmNaampoaJk26hIMf/Z69e1tZumwpP7rlVjb95jkmXzyFC/78m7z80haobYCebPDGWBy6Upzd3Mxr21+lflBjkIVAWIK0IOfBrbf+AwsXLuBIRzu2XdkcqLg1Ur6irq6Oxx5bxUsvvszShx7E80pcf/0PGDXqT7lu+g/I57PM/JsZCODrf3ENUzbv5JLf7uRrV00HYM7ts2hpaSGTyXP3dUna1yXoeDZG6rl6htXb2G6M/pqlrfiSFFJQKnkMHtzI0qU/49IpU8hm0sQTcf55zWqeemodxVKO7313Gpl0mr+94e9wGk5CuiFaf76Y5cuWcOWVV1JTfyrTx3vMvdHC7/IwCBxHoHy/LGoHiKyQUlIo5mluHsPIESN4desrIARaa0KhEFdf9R127/4dyn+PCy44j+/85VR+vWguArji8ilMnDSRlSuXkz52mFu+HUWlfUoliWUZfNn/E9oVB+b7Po2NjSxdspx58+4CIT/T2kEIMKLcmY0CFgZYv/HfeXb91wNbGbYJhxRWryMSx2t8M3CA9bo8zxhqgWemnoNRPhpByBZ8nCty9cZ3ufc6mwnNgp6cxraDQ46oo3EiYZ7fJrnjl8VPT5yEAKERgoGXYZ/mgMAFvjm0BnQ5I2zJJ9k8IPjGCM05zQLSgKPBWFxyG8y8DC4YpdEn+O6yl8QEfsEMAGDGGLQ2aK1RSmEwaKCn6CO0RhlByBFkikG/PpMXeGnIZcGxBAqoTQTXSud65QkobVAaJAKtg7NNYzRK+eV7aaQQZbv0BQFmjCEcDuM4Np7nY1kRwqEwAoiFbFA6KDuORdINOhOJCDgJQw0CLANo1jwAhOD554KHr4mAFYWYUxZETlDPXNfFsiIkEgkcx8HzPAqFQkVErF0JWLZts3fvPjo6OjAGamtqOLB/PyUh2HK4C5RGGXAtwaF8ESEE731k07ADCjmQ5d2v5EE0Du8cEAiheKXVYUi7puQH1khaFiUlOHjwQ157bStHjx1FCsngkwYzcmQTnvf5W6XPXen7vqKxsYHvXvM9nnzyqf+LDjhXX3MVa9asoqOjE9u2/riBGQOOY7N//35SqU4sy8JoE8xFaI0g+FnKYGSgt/XsKw/LslBKBfMSCLRW2LaNMeD5CksKpCUxWpfHDYLNxJLBMIvt2IGzqK+jqWl4Rcx4Rbyk1pqGQY0nrHhtikjh9nVIS14W14kCGl952FaEkteD68RQOtg5LRmmUMwgpcR1YoAmX8gQCoWQItxrvigUc4RDCTw/h2NHAJ9UZ6oiowPW7Nm3zf+8YcXjCZYtW86y5UvZvPm3rFr9OKeeehovvPA88+bN4513dzJ69GhWPLyC1tbd2LbFfffdz4iRTcydO4/6ujra2tpZuHAhY8edQ3vbEe68804OHz7EqFFnsHfPXubfNZ9HH3kEx7Wpr69j1qxZnH76l1i7di3/sW0bY8eODVpBn3OGVcR8986BvfH6DpYtfZh8Ls8H77/PjBk34LouDyxYyKrHV7Fh40bWr9/AoY8P89BDy+joSLFy5S9YtmwF+/buY8mSpUTCEd566y1WrPg5ixf/jFg0yd33/Ji1T/6atrY2vj31Kg58cICVK37BkSNHaGl5lrVPPkU4FK7Iabj8vJejlMGM1803/z1z591BPBbjmWfW09Q0HK00t98+i3vumU9zczOO45JMJnEch2g0ipQW0ViM3zz/Anv2vE99fT1CCra+8ioNDQ10dXXRfuRjMuk0kyZNpKXlKWbM+CFuKITruji2Q00ySTKZrJhdkpU4dQkahnm6uzP4RvHxoQOcNnw4484by7hxF/CrX62lrq4OpRRKKXzPQ2mF0ZpIOAwGVq9+gnA4TD6X56WXtnDTTTcSjUbZseMt4okEhXyeRQsfpLX1d/i+QmuN76vgOhWU/rJi34SUWJbEtmxc18XzPC6/fApv73yDVCrFunXriEYjhCNhBg0aBAZ0WcNNnz6Ngwc/IhRyaW9r58CHH7J584ukUil279oNxhBPxGk+ewyvvLI1mFqUkvpBdUSjUXzf++JZIyEEhXyBbCaL64bYt+8D5sy+k/fe3UVn51EaGxtJJpNseG4Thw8dxnZsIuEw7e3tTJw4gQ0bN9HW1sa2ba/R3dXNWWNGk0p1sGHjJkaMaOJfnm6hVAqkSF1dHcYY5sy5k9e2bWfChPF9IvqPfpfsyzBLUiwUSdYkOf/88xg6dAhDh5zMzp3vcPHki5gx84eceeY3SHWmKBQKzJ8/j1Gj/oR0OsPlV1zGV7/2FYYNG8aIkSMY0dTEooWL+fKXR5IvFLjpphvIZDJ0dnYye85tXDjhQr76ldPZ3drKWWPOYvbsW4lEIxhjvhg6rPfbDYVCRKMxurqOAZBMJrEtB40m3d2NbVvEYnEEkmKpQC6Xo7a2hu7uNKFQGMd1KBWLhEIhUqkUsViMSCRCLpcjHo8jEHh+iXQ6QyKRwHVcDKaic68VPQQxxqCU7rMnveNIx4+RK6X6HsyyLHzfD9xBeRRACNE3cNI7mi6l/Mz7lFJ9wy2VnKzul1OjgRTV/wSpAqsCqwKrAqsCq0YVWBVYFVgVWBVYNarAqsCqwKrAqsCqwKrxB+M/AUJy9NRBuC8jAAAAAElFTkSuQmCC" alt="つなぐフード">
+    <div>
+      <h1>つなぐフード名刺帳</h1>
+      <span class="sub">TSUNAGU FOOD</span>
+    </div>
+  </div>
+  <div class="search">
+    <select id="qScope" aria-label="検索する項目">
+      <option value="all">すべての項目</option>
+      <option value="name">氏名・ふりがな</option>
+      <option value="company">会社・部署・役職</option>
+      <option value="contact">電話・メール</option>
+      <option value="address">住所</option>
+      <option value="memo">メモ・タグ</option>
+    </select>
+    <div class="search-in">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="検索（スペースで複数語・ / で移動）" aria-label="名刺を検索">
+    </div>
+  </div>
+  <div class="h-actions">
+    <div class="h-menu">
+      <button class="btn icon subtle" id="menuBtn" aria-haspopup="true" aria-expanded="false" title="その他の操作">⋯</button>
+      <div class="menu-pop" id="menuPop" role="menu">
+        <button data-act="csv" role="menuitem">CSV に書き出す（全件・Excel）</button>
+        <button data-act="csvView" role="menuitem">表示中の名刺だけ CSV に書き出す</button>
+        <button data-act="vcf" role="menuitem">vCard に書き出す（電話帳）</button>
+        <button data-act="json" role="menuitem">JSON バックアップ</button>
+        <button data-act="import" role="menuitem">JSON を読み込む</button>
+        <hr>
+        <button data-act="cats" role="menuitem">分類を管理</button>
+        <button data-act="fields" role="menuitem">入力項目を追加・管理</button>
+        <button data-act="print" role="menuitem">名刺＋文面の一覧を印刷</button>
+        <hr>
+        <button data-act="collabo" role="menuitem">NI Collabo 360 アドレス帳用 CSV</button>
+        <button data-act="mailAll" role="menuitem">表示中の人にまとめてメール（BCC）</button>
+        <button data-act="mailCfg" role="menuitem">メールの定型文・設定</button>
+        <hr>
+        <button data-act="samples" role="menuitem">サンプルを追加</button>
+        <button data-act="wipe" class="danger" role="menuitem">すべて削除</button>
+      </div>
+    </div>
+    <button class="btn cam" id="scanBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8h3.2l1.8-2.6h7l1.8 2.6h3.2v11h-17z"/><circle cx="12" cy="13.2" r="3.6"/></svg>カメラで読み取り</button>
+    <button class="btn primary" id="addBtn">＋ 名刺を登録</button>
+  </div>
+</header>
+
+<div class="banner" id="banner">
+  <span>サンプルの名刺を表示中です。そのまま編集・削除できます。</span>
+  <span class="b-actions">
+    <button id="sampleClear">サンプルを削除</button>
+    <button class="b-close" id="bannerClose" aria-label="閉じる">×</button>
+  </span>
+</div>
+
+<nav class="cattabs" id="cattabs" aria-label="分類"></nav>
+
+<div class="toolbar" id="toolbar">
+  <span class="count" id="count"></span>
+  <div class="chips" id="chips"></div>
+  <div class="t-right">
+    <select id="coSel" aria-label="会社で絞り込み"></select>
+    <select id="sort" aria-label="並び替え">
+      <option value="received">受取日が新しい順</option>
+      <option value="received-asc">受取日が古い順</option>
+      <option value="updated">更新が新しい順</option>
+      <option value="company">会社名あいうえお順</option>
+      <option value="name">氏名あいうえお順</option>
+    </select>
+    <div class="seg" role="group" aria-label="表示切替">
+      <button data-view="card" class="on">カード</button>
+      <button data-view="sheet">名刺＋文面</button>
+      <button data-view="company">会社別</button>
+      <button data-view="list">リスト</button><button data-view="time">時系列</button></div>
+  </div>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <div class="listwrap" id="listwrap" hidden></div>
+  <div class="listwrap" id="timeWrap" hidden style="padding:6mm 8mm"></div>
+  <div id="groups" hidden></div>
+  <div id="sheet" hidden></div>
+
+  <div class="empty" id="noResult">
+    <h2>条件に合う名刺が見つかりません</h2>
+    <p>キーワード、分類、タグ、お気に入りの絞り込みを変えてみてください。</p>
+    <div class="e-actions"><button class="btn subtle" id="clearFilters">絞り込みをクリア</button></div>
+  </div>
+
+  <div class="empty" id="empty">
+    <div class="seal-big" aria-hidden="true">名</div>
+    <h2>まだ名刺がありません</h2>
+    <p>氏名・会社・連絡先を入力して、最初の一枚を登録しましょう。<br>
+    登録した名刺は、このブラウザの中にだけ保存されます。</p>
+    <div class="e-actions">
+      <button class="btn primary" id="emptyScan">カメラで名刺を読み取る</button>
+      <button class="btn subtle" id="emptyAdd">＋ 手入力で登録</button>
+      <button class="btn subtle" id="emptySample">サンプルを見てみる</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  登録データはこのブラウザ内（localStorage）にのみ保存されます。端末を変更するときは「JSON バックアップ」から書き出してください。<br>
+  © つなぐフード名刺帳 — ブラウザで動く名刺管理
+</footer>
+
+<!-- 詳細ダイアログ -->
+<div class="overlay" id="detailOverlay" role="dialog" aria-modal="true" aria-label="名刺の詳細">
+  <div class="dialog">
+    <button class="d-close" data-close="detailOverlay" aria-label="閉じる">×</button>
+    <div class="detail-body">
+      <div>
+        <div class="flip" id="flip">
+          <div class="flip-inner">
+            <div class="flip-face front" id="detailFront"></div>
+            <div class="flip-face back" id="detailBack"></div>
+          </div>
+        </div>
+        <div class="flip-hint"><button id="flipBtn">↻ 裏面を見る</button></div>
+      </div>
+      <div>
+        <div class="fields" id="detailFields"></div>
+        <div class="d-actions">
+          <button class="btn subtle" id="favBtn">☆ お気に入りに追加</button>
+          <button class="btn subtle" id="editBtn">編集</button>
+          <button class="btn danger" id="delBtn">削除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 登録・編集フォーム -->
+<div class="overlay" id="formOverlay" role="dialog" aria-modal="true" aria-label="名刺の登録・編集">
+  <div class="dialog form-dialog">
+    <button class="d-close" data-close="formOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head" id="formTitle">名刺を登録</div>
+    <div class="form-body">
+      <div class="form-err" id="formErr">会社名と氏名（姓）のどちらか一方は入力してください。</div>
+      <div class="ocr-note" id="ocrNote">カメラで読み取った項目は<b>黄色</b>で表示しています。読み間違いがないか確認・修正してから登録してください。</div>
+      <form id="cardForm" novalidate>
+        <div class="f-section">基本情報</div>
+        <div class="fgrid">
+          <div class="f"><label for="f-cat">分類</label><select id="f-cat"></select><button type="button" id="catAdd" style="font-size:11px;padding:3px 9px;border:1px solid #D8DDE2;background:#fff;border-radius:8px;cursor:pointer;white-space:nowrap">＋ 追加</button> <button type="button" id="catMgr" style="font-size:11px;padding:3px 9px;border:1px solid #D8DDE2;background:#fff;border-radius:8px;cursor:pointer;white-space:nowrap">整理</button></div>
+          <div class="f"><label>&nbsp;</label><label class="f-check"><input type="checkbox" id="f-fav"> ★ お気に入りに入れる</label></div>
+          <div class="f full"><label>会社名・施設名 <span class="req">※どちらか必須</span></label><input id="f-company" type="text" list="coList" autocomplete="off" placeholder="例）鶴見堂印刷株式会社（登録済みの会社は候補に出ます）"><datalist id="coList"></datalist></div>
+          <div class="f"><label>部署</label><input id="f-dept" type="text" placeholder="例）営業部">
+    <input id="f-office" placeholder="事業所（例：町田事業所）" autocomplete="off"></div>
+          <div class="f"><label>役職</label><input id="f-title" type="text" placeholder="例）主任"></div>
+          <div class="f"><label>姓 <span class="req">※どちらか必須</span></label><input id="f-last" type="text" placeholder="例）佐藤"></div>
+          <div class="f"><label>名</label><input id="f-first" type="text" placeholder="例）美咲"></div>
+          <div class="f full"><label>ふりがな</label><input id="f-reading" type="text" placeholder="例）さとう みさき"></div>
+        </div>
+
+        <div class="f-section">連絡先</div>
+        <div class="fgrid">
+          <div class="f"><label>電話番号</label><input id="f-phone" type="tel" placeholder="03-3456-7890"></div>
+          <div class="f"><label>携帯番号</label><input id="f-mobile" type="tel" placeholder="090-1122-3344"></div>
+          <div class="f full"><label>メールアドレス</label><input id="f-email" type="email" placeholder="mail@example.co.jp"></div>
+          <div class="f full"><label>URL</label><input id="f-url" type="url" placeholder="https://..."></div>
+          <div class="f full"><label>住所</label><input id="f-address" type="text" placeholder="東京都中央区銀座2-11-3"></div>
+        </div>
+
+        <div class="f-section">メモ・その他</div>
+        <div class="fgrid">
+          <div class="f"><label>受取日</label><input id="f-received" type="date"></div>
+          <div class="f"><label>タグ（カンマ区切り）</label><input id="f-tags" type="text" placeholder="取引先, 展示会"></div>
+          <div class="f full"><label>メモ</label><textarea id="f-memo" placeholder="どこで交換したか、次のアクションなど"></textarea></div>
+          <div class="f full">
+            <label>名刺の写真（任意）</label>
+            <input id="f-img" type="file" accept="image/*">
+            <div class="img-prev" id="imgPrev">
+              <img id="imgPrevImg" alt="名刺の写真プレビュー">
+              <button type="button" id="imgClear">写真を削除</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="f-section">追加の項目</div>
+        <div class="fgrid" id="f-extra"></div>
+        <button type="button" class="link-btn" id="openFieldsFromForm">＋ 入力項目を追加・管理</button>
+
+        <div class="form-actions">
+          <button type="button" class="btn subtle" data-close="formOverlay">キャンセル</button>
+          <button type="submit" class="btn primary" id="saveBtn">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- カメラで読み取り -->
+<div class="overlay" id="scanOverlay" role="dialog" aria-modal="true" aria-label="名刺を撮影して読み取る">
+  <div class="dialog scan-dialog">
+    <button class="d-close" data-close="scanOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head">名刺を撮影して読み取る</div>
+    <div class="form-body">
+      <div class="scan-step on" id="scanStep1">
+        <div class="scan-pick">
+          <label class="pick">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8h3.2l1.8-2.6h7l1.8 2.6h3.2v11h-17z"/><circle cx="12" cy="13.2" r="3.6"/></svg>
+            カメラで撮影
+            <small>スマホのカメラが起動します</small>
+            <input type="file" accept="image/*" capture="environment" id="scanCam" hidden>
+          </label>
+          <label class="pick">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4"/></svg>
+            画像を選ぶ
+            <small>撮影済みの写真・スキャン画像</small>
+            <input type="file" accept="image/*" id="scanFile" hidden>
+          </label>
+        </div>
+        <div class="scan-tips">
+          <b>きれいに読み取るコツ</b><br>
+          ・明るい場所で、影や光の反射が入らないように<br>
+          ・名刺を真上から、画面いっぱいに大きく写す<br>
+          ・ピントを合わせて、手ブレしないように
+        </div>
+      </div>
+
+      <div class="scan-step" id="scanStep2">
+        <div class="scan-prev"><canvas id="scanCanvas" aria-label="撮影した名刺"></canvas></div>
+        <div class="scan-row">
+          <button class="btn subtle" id="rotL" type="button">↺ 左に回転</button>
+          <button class="btn subtle" id="rotR" type="button">↻ 右に回転</button>
+          <select id="scanLang" aria-label="名刺の文字の向き">
+            <option value="jpn">横書きの名刺</option>
+            <option value="jpn_vert">縦書きの名刺</option>
+          </select>
+        </div>
+        <div class="progress" id="scanProg" hidden><i></i></div>
+        <div class="scan-status" id="scanStatus">文字の上が画面の上になるように回転してから、読み取ってください。</div>
+        <div class="form-actions">
+          <button class="btn subtle" id="scanRetake" type="button">撮り直す</button>
+          <button class="btn primary" id="scanRun" type="button">文字を読み取る</button>
+        </div>
+      </div>
+
+      <div class="scan-step" id="scanStep3">
+        <div class="scan-status" id="ocrSummary" style="margin-top:0"></div>
+        <table class="ocr-table" id="ocrTable"></table>
+        <details class="raw"><summary>読み取った全文を見る</summary><textarea id="ocrRaw" readonly aria-label="読み取った全文"></textarea></details>
+        <div class="form-actions">
+          <button class="btn subtle" id="scanAgain" type="button">撮り直す</button>
+          <button class="btn primary" id="scanToForm" type="button">この内容で登録フォームへ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 入力項目の管理 -->
+<div class="overlay" id="fieldOverlay" role="dialog" aria-modal="true" aria-label="入力項目を追加・管理">
+  <div class="dialog cat-dialog">
+    <button class="d-close" data-close="fieldOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head">入力項目を追加・管理</div>
+    <div class="form-body">
+      <div id="fieldList"></div>
+      <form class="catadd" id="fieldAddForm">
+        <input id="fieldNew" placeholder="追加する項目名（例：担当者、契約番号、誕生日）" maxlength="20" aria-label="追加する項目名">
+        <button class="btn primary" type="submit">追加</button>
+      </form>
+      <p class="hint">追加した項目は、すべての名刺の登録フォーム・詳細・「名刺＋文面」一覧に出て、CSVにも列として書き出されます。<br>項目名を変えても入力済みの内容はそのまま残ります。項目を削除すると、その項目に入力した内容も消えます。</p>
+    </div>
+  </div>
+</div>
+
+<!-- メールを書く -->
+<div class="overlay" id="mailOverlay" role="dialog" aria-modal="true" aria-label="メールを書く">
+  <div class="dialog form-dialog">
+    <button class="d-close" data-close="mailOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head" id="mailTitle">メールを書く</div>
+    <div class="form-body">
+      <div class="fgrid">
+        <div class="f full"><label id="mToLabel">宛先</label>
+          <div class="cp-row"><input id="mTo" readonly><button type="button" class="btn subtle sm" data-cp="mTo">コピー</button></div></div>
+        <div class="f full"><label>件名</label>
+          <div class="cp-row"><input id="mSubject"><button type="button" class="btn subtle sm" data-cp="mSubject">コピー</button></div></div>
+        <div class="f full"><label>本文</label>
+          <textarea id="mBody" rows="9"></textarea>
+          <div class="cp-row end"><button type="button" class="btn subtle sm" data-cp="mBody">本文をコピー</button></div></div>
+      </div>
+      <p class="hint" id="mNote"></p>
+      <div class="mail-acts">
+        <button class="btn primary" type="button" id="mCollabo" hidden>宛先をコピーして NI Collabo 360 を開く</button>
+        <button class="btn subtle" type="button" id="mMailto">メールソフトで作成</button>
+        <button class="btn subtle" type="button" id="mGmail">Gmail で作成</button>
+      </div>
+      <button class="link-btn" type="button" id="mCfgLink">定型文・NI Collabo 360 の URL を設定する</button>
+    </div>
+  </div>
+</div>
+
+<!-- メールの設定 -->
+<div class="overlay" id="mailCfgOverlay" role="dialog" aria-modal="true" aria-label="メールの定型文・設定">
+  <div class="dialog form-dialog">
+    <button class="d-close" data-close="mailCfgOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head">メールの定型文・設定</div>
+    <div class="form-body">
+      <div class="fgrid">
+        <div class="f full"><label>件名の定型文</label><input id="cfgSubject" placeholder="例）ご挨拶（{会社名} {姓}様）"></div>
+        <div class="f full"><label>本文の定型文</label><textarea id="cfgBody" rows="7"></textarea></div>
+        <div class="f full"><label>署名</label><textarea id="cfgSign" rows="4" placeholder="例）&#10;━━━━━━━━━━&#10;株式会社○○ 営業部&#10;山田 太郎"></textarea></div>
+        <div class="f full"><label>NI Collabo 360 のメール画面の URL（任意）</label><input id="cfgUrl" type="url" placeholder="ブラウザで NI Collabo 360 のメールを開いたときのアドレスを貼り付け"></div>
+      </div>
+      <p class="hint">定型文には次の文字を入れると、相手ごとに自動で置き換わります：<br>
+      <b>{会社名}</b>　<b>{氏名}</b>　<b>{姓}</b>　<b>{名}</b>　<b>{部署}</b>　<b>{役職}</b><br>
+      URL を入れておくと、メール画面に「宛先をコピーして NI Collabo 360 を開く」ボタンが出ます。</p>
+      <div class="form-actions">
+        <button class="btn subtle" type="button" data-close="mailCfgOverlay">キャンセル</button>
+        <button class="btn primary" type="button" id="cfgSave">保存する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NI Collabo 360 アドレス帳用 CSV -->
+<div class="overlay" id="collaboOverlay" role="dialog" aria-modal="true" aria-label="NI Collabo 360 アドレス帳用 CSV">
+  <div class="dialog wide-dialog">
+    <button class="d-close" data-close="collaboOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head">NI Collabo 360 アドレス帳用 CSV</div>
+    <div class="form-body">
+      <div class="f-section">1. 列をコラボに合わせる（最初の1回だけ）</div>
+      <p class="hint" style="margin-top:0">NI Collabo 360 のアドレス帳の「CSV 読み込み」画面にあるサンプル CSV（またはアドレス帳から書き出した CSV）を読み込むと、列の並びを自動で合わせます。合わせた内容はこのブラウザに保存され、次回からはそのまま使えます。</p>
+      <div class="cb-tools">
+        <label class="btn primary sm" style="cursor:pointer">コラボのサンプル CSV を読み込む<input type="file" id="cbSample" accept=".csv,text/csv" hidden></label>
+        <button class="btn subtle sm" type="button" id="cbAdd">＋ 列を追加</button>
+        <button class="btn subtle sm" type="button" id="cbReset">仮の列に戻す</button>
+      </div>
+      <div class="cb-src" id="cbSrc"></div>
+      <table class="cb-map"><thead><tr><th>CSV の列名（コラボ側）</th><th>入れる内容（名刺帳側）</th><th></th></tr></thead><tbody id="cbMap"></tbody></table>
+
+      <div class="f-section">2. 書き出す内容</div>
+      <div class="cb-opts">
+        <div class="f"><label>対象</label><select id="cbTarget"></select></div>
+        <div class="f"><label>文字コード</label><select id="cbEnc"><option value="sjis">Shift_JIS（コラボの初期設定向け）</option><option value="utf8">UTF-8</option></select></div>
+        <div class="f"><label>ふりがな</label><select id="cbKana"><option value="kata">カタカナにする</option><option value="hira">ひらがなにする</option><option value="raw">入力のまま</option></select></div>
+        <div class="f"><label>&nbsp;</label>
+          <label class="ck"><input type="checkbox" id="cbHead" checked> 1行目に列名を入れる</label>
+          <label class="ck"><input type="checkbox" id="cbMemoX" checked> 備考に分類・タグ・受取日・対応履歴も入れる</label></div>
+      </div>
+      <div class="f-section">プレビュー（先頭3件）</div>
+      <div class="cb-prev" id="cbPrev"></div>
+      <div class="form-actions">
+        <button class="btn subtle" type="button" data-close="collaboOverlay">閉じる</button>
+        <button class="btn primary" type="button" id="cbExport">CSV を書き出す</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 分類の管理 -->
+<div class="overlay" id="catOverlay" role="dialog" aria-modal="true" aria-label="分類を管理">
+  <div class="dialog cat-dialog">
+    <button class="d-close" data-close="catOverlay" aria-label="閉じる">×</button>
+    <div class="dialog-head">分類を管理</div>
+    <div class="form-body">
+      <div id="catList"></div>
+      <form class="catadd" id="catAddForm">
+        <input id="catNew" placeholder="新しい分類名（例：協力会社）" maxlength="20" aria-label="新しい分類名">
+        <button class="btn primary" type="submit">追加</button>
+      </form>
+      <p class="hint">名前を書き換えると、その分類の名刺もまとめて変わります。<br>分類を削除すると、中の名刺は「未分類」に移ります（名刺そのものは消えません）。</p>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileJson" accept=".json,application/json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>const CATS_KEY='meishicho.cats.v1';
+const CPAL=['#7C5CBF','#2F7D5D','#B0682F','#4A6FA5','#A53D63','#3F7C82','#3F6C4F','#8C5A9E'];
+function loadCats(){ try{ const sv=JSON.parse(localStorage.getItem(CATS_KEY)); if(Array.isArray(sv)&&sv.length) return sv; }catch(e){} return ['企業','契約施設','官公庁・団体','個人','その他'].map(name=>({name})); }
+function rebuildCatSel(){ $('#f-cat').innerHTML='<option value="">未分類</option>'+cats.map(k=>'<option value="'+esc(k.name)+'">'+esc(k.name)+'</option>').join(''); }
+document.addEventListener('DOMContentLoaded',function(){
+$('#catAdd').addEventListener('click',()=>{
+  const v=(prompt('追加する分類の名前（例：協力工場）')||'').trim(); if(!v)return;
+  if(cats.some(k=>k.name===v)){alert('「'+v+'」はすでにあります');return;}
+  cats.push({name:v,color:CPAL[cats.length%CPAL.length]});
+  try{store.set(LS_CATS,JSON.stringify(cats))}catch(e){}
+  rebuildCatSel(); $('#f-cat').value=v; render();
+});
+$('#catMgr').addEventListener('click',()=>{
+  for(;;){
+    const v=(prompt('現在の分類: '+cats.map(k=>k.name).join(' / ')+'\n\n消したい分類の名前を入れてOK（キャンセルで終了）')||''); if(!v)return;
+    const i=cats.findIndex(k=>k.name===v.trim());
+    if(i<0){alert('見つかりません');continue;}
+    if(!confirm('「'+v.trim()+'」を分類から外します？（名刺のデータは残り、未分類になります）'))continue;
+    cats.splice(i,1); try{store.set(LS_CATS,JSON.stringify(cats))}catch(e){}
+    rebuildCatSel(); render();
+  }
+});
+});
+
+'use strict';
+/* ───────────────────────── 基礎 ───────────────────────── */
+const LS_CARDS='meishicho.cards.v1', LS_SEED='meishicho.seeded.v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const uid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const store={
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+};
+
+let cards=[], state={q:'',tag:'',sort:'received',cat:'*',fav:false,view:'card',scope:'all',company:'',expanded:new Set()},
+    currentId=null, bannerDismissed=false;
+let pendingImage='';
+
+/* ───────────────────────── 分類 ───────────────────────── */
+const LS_CATS='meishicho.cats.v1', LS_VIEW='meishicho.view.v1';
+const CAT_COLORS=['#2C3D63','#2F7D6B','#B8994D','#8A4F9E','#C2703A','#4F7FA8','#7A8A3A','#A8475E'];
+let cats=[];
+function loadCats(){
+  try{ cats=JSON.parse(store.get(LS_CATS)||'null') }catch(e){ cats=null }
+  if(!Array.isArray(cats)){
+    cats=['企業','契約施設','官公庁・団体','個人','その他'].map(name=>({name}));
+  }
+  cats.forEach((k,i)=>{ if(!k.color) k.color=CAT_COLORS[i%CAT_COLORS.length] });
+  saveCats();
+}
+function saveCats(){ store.set(LS_CATS,JSON.stringify(cats)) }
+const catOf=c=>cats.find(k=>k.name===c.category)||null;
+const catColor=c=>{ const k=catOf(c); return k?k.color:'#9AA2AC' };
+const catName=c=>catOf(c)?c.category:'未分類';
+
+const DEMO_HIST={
+'中村':[{date:'2026-08-20',text:'工場見学の案内をもらう'},{date:'2026-09-05',text:'部品の見積依頼'},{date:'2026-09-28',text:'担当者変更の連絡'}],
+'佐藤':[{date:'2026-10-02',text:'校正刷りを納品'},{date:'2026-10-08',text:'追加発注の相談で訪問'}],
+'田中':[{date:'2026-08-15',text:'初回の挨拶回り'},{date:'2026-09-25',text:'融資の相談で訪問'},{date:'2026-10-01',text:'担当者と懇談'}],
+'松本':[{date:'2026-08-04',text:'支店長就任の挨拶'},{date:'2026-09-10',text:'夜の懇親会で再会'}],
+'森':[{date:'2026-09-08',text:'健診センターの見学'}],
+'高橋':[{date:'2026-08-25',text:'本社で初回の商談'},{date:'2026-09-15',text:'新製品の商談'},{date:'2026-10-01',text:'本社で年間契約の打合せ'}],
+'岡本':[{date:'2026-09-03',text:'町田事業所で初回のご挨拶'},{date:'2026-09-18',text:'新商品のサンプルを納品'},{date:'2026-10-06',text:'発注の打診で再訪'}],
+'池田':[{date:'2026-08-22',text:'相模原工場の見学に同行'},{date:'2026-09-12',text:'検査基準の資料を受領'},{date:'2026-10-09',text:'納品スケジュールを調整'}],
+'山口':[{date:'2026-09-30',text:'印刷工程の説明会'}],
+'佐伯':[{date:'2026-10-03',text:'契約書の確認'}],
+'小林':[{date:'2026-09-06',text:'法人向け相談会で面会'}],
+'井上':[{date:'2026-09-21',text:'地域イベントで再会'}],
+'Elena Rossi':[{date:'2026-09-11',text:'輸入取引のヒアリング'}]
+};
+const DEFAULTS={company:'',office:'',dept:'',title:'',lastname:'',firstname:'',reading:'',
+  phone:'',mobile:'',email:'',address:'',url:'',tags:[],memo:'',received:'',image:'',created:'',
+  category:'',fav:false,history:[],extra:{},updated:''};
+
+/* ───────────────────────── サンプル ───────────────────────── */
+function sampleCards(){
+  const mk=(o,i)=>Object.assign({},DEFAULTS,{
+    ...o, id:uid()+i, sample:true, history:[...(o.history||[]).map(h=>({id:uid(),...h})),...(DEMO_HIST[o.lastname]||[]).map(h=>({id:uid(),...h}))], received:o.received||'2026-09-01', created:o.received||'2026-09-01'
+  });
+  const list=[
+    mk({company:'スズキ電機製作所',dept:'技術部',title:'主任技師',lastname:'中村',firstname:'賢太',reading:'なかむら けんた',
+        phone:'044-933-2100',email:'nakamura@example.co.jp',address:'川崎市幸区鹿島田1-2-5',tags:['取引先'],
+        received:'2026-09-30',memo:'製品検査の立ち会い担当。月末に打ち合わせ予定。'}),
+    mk({company:'鶴見堂印刷株式会社',dept:'営業部',title:'主任',lastname:'佐藤',firstname:'美咲',reading:'さとう みさき',
+        phone:'03-3456-7890',mobile:'090-1122-3344',email:'misaki-sato@example.co.jp',address:'東京都中央区銀座2-11-3',
+        tags:['取引先','展示会'],received:'2026-09-12',memo:'展示会で交換。見積書のフォローが必要。',
+        history:[{date:'2026-09-12',text:'展示会のブースで名刺交換'},{date:'2026-09-18',text:'カタログ印刷の見積書をメールで受領'}]}),
+    mk({company:'みなと銀行',office:'本社',dept:'法人営業課',title:'課長',lastname:'田中',firstname:'健一',reading:'たなか けんいち',
+        phone:'03-6212-4500',email:'tanaka-k@example.co.jp',address:'東京都港区浜松町1-8-2',
+        tags:['金融','顧客'],received:'2026-08-04',memo:'四半期ごとに顔合わせの約束をした。'}),
+    mk({company:'Beltrade Trading S.r.l.',dept:'Sales Dept.',lastname:'Elena Rossi',reading:'エレナ・ロッシ',
+        phone:'+39 02 1234 5678',email:'e.rossi@example.com',tags:['海外','取引先'],
+        received:'2026-07-02',memo:'Milan office. 英語OK、時差はマイナス7時間。'}),
+    mk({company:'佐伯法律事務所',dept:'',title:'弁護士',lastname:'佐伯',firstname:'潤',reading:'さいき じゅん',
+        phone:'03-5565-2211',email:'saeki@example.com',tags:['専門家'],
+        received:'2026-05-19',memo:'契約まわりの相談先。初回相談は1時間。'}),
+    mk({company:'ベルフーズ株式会社',office:'',dept:'広報部',title:'マネージャー',lastname:'高橋',firstname:'陽子',reading:'たかはし ようこ',
+        phone:'03-5812-7700',email:'takahashi-y@example.co.jp',tags:['メディア'],
+        received:'2026-02-14',memo:'プレスリリースの窓口。'}),
+    mk({company:'ベルフーズ株式会社',office:'町田事業所',dept:'営業課',title:'主任',
+        lastname:'岡本',firstname:'翔太',reading:'おかもと しょうた',
+        phone:'044-555-0134',email:'okamoto@example.co.jp',
+        received:'2026-09-03',memo:'町田事業所の注文窓口。'}),
+    mk({company:'ベルフーズ株式会社',office:'相模原工場',dept:'品質管理部',title:'工場長',
+        lastname:'池田',firstname:'春香',reading:'いけだ はるか',
+        phone:'042-555-0177',email:'ikeda@example.co.jp',
+        received:'2026-08-22',memo:'検査規格の担当。'}),
+    mk({category:'契約施設',company:'社会福祉法人みどり会 特別養護老人ホームみどりの丘',dept:'施設長室',title:'施設長',
+        lastname:'小林',firstname:'和子',reading:'こばやし かずこ',phone:'042-555-0181',email:'kobayashi@example.or.jp',
+        address:'東京都八王子市みどり町3-4-1',tags:['契約更新'],received:'2026-09-20',
+        memo:'年間契約。更新は毎年4月。担当窓口は事務長。'}),
+    mk({category:'契約施設',company:'医療法人青葉会 青葉クリニック',dept:'事務部',title:'事務長',
+        lastname:'森',firstname:'大輔',reading:'もり だいすけ',phone:'045-555-0142',email:'mori@example.or.jp',
+        address:'横浜市青葉区青葉台2-7-9',tags:['契約更新'],received:'2026-06-11',
+        memo:'月1回の定期訪問。請求書は月末締め。'}),
+    mk({category:'官公庁・団体',company:'みなと地域産業振興協会',dept:'事業推進課',
+        lastname:'井上',firstname:'真理',reading:'いのうえ まり',phone:'03-5555-0163',email:'inoue@example.or.jp',
+        tags:['補助金'],received:'2026-04-08',memo:'補助金セミナーの案内をもらう。'}),
+    mk({company:'鶴見堂印刷株式会社',dept:'制作部',title:'部長',lastname:'山口',firstname:'拓也',reading:'やまぐち たくや',
+        phone:'03-3456-7891',email:'yamaguchi@example.co.jp',address:'東京都中央区銀座2-11-3',
+        tags:['取引先'],received:'2026-09-12',memo:'佐藤さんの上長。デザイン入稿の窓口。'}),
+    mk({company:'みなと銀行',office:'浜松町支店',dept:'浜松町支店',title:'支店長',lastname:'松本',firstname:'浩二',reading:'まつもと こうじ',
+        phone:'03-6212-4501',email:'matsumoto-k@example.co.jp',address:'東京都港区浜松町1-8-2',
+        tags:['金融'],received:'2026-08-04',memo:'田中課長の紹介で挨拶。'}),
+  ];
+  list.forEach(c=>{ if(!c.category) c.category=(c.company==='佐伯法律事務所'?'その他':'企業') });
+  list[1].fav=true; list[6].fav=true;
+  return list;
+}
+
+/* ───────────────────────── 読み込み／保存 ───────────────────────── */
+function loadCards(){
+  const stored=store.get(LS_CARDS);
+  if(stored){
+    try{ cards=JSON.parse(stored)||[]; return }catch(e){ cards=[] }
+  }
+  if(!store.get(LS_SEED)){ cards=sampleCards(); store.set(LS_SEED,'1') }
+  else cards=[];
+  saveCards();
+}
+function saveCards(){ store.set(LS_CARDS,JSON.stringify(cards)) }
+
+/* ───────────────────────── 表示ユーティリティ ───────────────────────── */
+const displayName=c=>{
+  const n=((c.lastname||'')+'　'+(c.firstname||'')).trim();
+  return n||'(氏名なし)';
+};
+const deptTitle=c=>[c.dept,c.title].filter(x=>x&&x!=='-').join('　');
+const fmtDate=d=>{
+  if(!d) return '—';
+  const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}年${+m[2]}月${+m[3]}日` : String(d);
+};
+const sortKey=c=>(c.reading||displayName(c)||'').toLowerCase();
+
+/* ───────────────────────── カードの描画 ───────────────────────── */
+function cardHTML(c,i,plain){
+  const name=displayName(c);
+  const lat=/[A-Za-z\u00C0-\u024F]/.test(name);
+  const sizeCls=name.length>=8?' xlong':name.length>=6?' long':'';
+  const seal=((c.lastname||'')||(c.company||'')||'名').trim().charAt(0)||'名';
+  const contact=[c.phone||c.mobile, c.email].filter(Boolean).slice(0,2).map(esc).join('<br>');
+  const dt=deptTitle(c);
+  const dtLat=/[A-Za-z\u00C0-\u024F]/.test(dt);
+  const rd=c.reading&&!lat?c.reading:'';
+  const interact=plain?'':` tabindex="0" role="button" aria-label="${esc(name)} の詳細を開く"`;
+  const st=`--cat:${catColor(c)};${plain?'':'--i:'+Math.min(i,12)}`;
+  return `<article class="meishi${plain?' static':''}" data-id="${c.id}"${interact} style="${st}">
+    <div class="m-cat">${esc(catName(c))}${c.office?`<span class="m-office">・ ${esc(c.office)}</span>`:''}</div>${c.fav?'<div class="m-star" aria-label="お気に入り">★</div>':''}
+    <div class="m-co">${esc(c.company||'(会社名なし)')}</div>${c.office?``:''}
+    <div class="m-rule"></div>
+    <div class="m-side">
+      ${dt?`<div class="m-dept${dtLat?' lat':''}">${esc(dt)}</div>`:''}
+      ${rd?`<div class="m-reading">${esc(rd)}</div>`:''}
+      <div class="m-name${sizeCls}${lat?' lat':''}">${esc(name)}</div>
+    </div>
+    ${contact?`<div class="m-contact">${contact}</div>`:''}
+    <div class="m-seal" aria-hidden="true">${esc(seal)}</div>
+  </article>`;
+}
+function backHTML(c){
+  const tags=(c.tags||[]).map(t=>`<span class="pill">${esc(t)}</span>`).join('');
+  const foot=[c.address,c.url].filter(Boolean).map(esc).join('<br>');
+  return `<div class="meishi static" data-dummy>
+    ${c.image?`<img class="b-img" src="${c.image}" alt="名刺の写真">`:''}
+    <div class="backbody">
+      <div class="b-head"><span>受取日 ${esc(fmtDate(c.received))}</span>${tags?`<span>${tags}</span>`:''}</div>
+      <div class="b-memo${c.memo?'':' placeholder'}">${esc(c.memo||'（メモはまだありません）')}</div>
+      ${foot?`<div class="b-foot">${foot}</div>`:''}
+    </div>
+  </div>`;
+}
+
+/* ───────────────────────── 一覧 ───────────────────────── */
+/* 検索用の正規化：全角/半角・カタカナ/ひらがな・大小文字・空白/ハイフンの違いを吸収 */
+const norm=s=>String(s??'').normalize('NFKC').toLowerCase()
+  .replace(/[\u30a1-\u30f6]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60))
+  .replace(/[\s\-‐‑–—−ー]/g,'');
+const SCOPES={
+  all:c=>[c.company,c.office,c.dept,c.title,c.lastname,c.firstname,c.reading,c.phone,c.mobile,c.email,
+          c.address,c.url,c.memo,(c.tags||[]).join(' '),catName(c),
+          Object.values(c.extra||{}).join(' '),(c.history||[]).map(h=>h.text).join(' ')],
+  name:c=>[c.lastname,c.firstname,c.reading],
+  company:c=>[c.company,c.dept,c.title],
+  contact:c=>[c.phone,c.mobile,c.email,c.url],
+  address:c=>[c.address],
+  memo:c=>[c.memo,(c.tags||[]).join(' '),(c.history||[]).map(h=>h.text).join(' '),Object.values(c.extra||{}).join(' ')],
+};
+function filtered(){
+  let l=cards.slice();
+  if(state.cat==='__none') l=l.filter(c=>!catOf(c));
+  else if(state.cat!=='*') l=l.filter(c=>c.category===state.cat);
+  if(state.fav) l=l.filter(c=>c.fav);
+  if(state.company) l=l.filter(c=>coKey(c)===state.company);
+  if(state.tag) l=l.filter(c=>(c.tags||[]).includes(state.tag));
+  const words=state.q.split(/[\s　]+/).map(norm).filter(Boolean);
+  if(words.length){
+    const pick=SCOPES[state.scope]||SCOPES.all;
+    l=l.filter(c=>{ const h=norm(pick(c).join('|')); return words.every(w=>h.includes(w)) });
+  }
+  if(state.sort==='updated') l.sort((a,b)=>String(b.updated||b.created||'').localeCompare(String(a.updated||a.created||'')));
+  else if(state.sort==='received-asc') l.sort((a,b)=>String(a.received||a.created||'').localeCompare(String(b.received||b.created||'')));
+  else if(state.sort==='company') l.sort((a,b)=>(a.company||'').localeCompare(b.company||'','ja'));
+  else if(state.sort==='name') l.sort((a,b)=>sortKey(a).localeCompare(sortKey(b),'ja'));
+  else l.sort((a,b)=>String(b.received||b.created||'').localeCompare(String(a.received||a.created||'')));
+  return l;
+}
+function renderChips(){
+  const tc={};
+  cards.forEach(c=>(c.tags||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
+  const tags=Object.keys(tc).sort((a,b)=>tc[b]-tc[a]||a.localeCompare(b,'ja')).slice(0,10);
+  const favN=cards.filter(c=>c.fav).length;
+  $('#chips').innerHTML=
+    (state.company?`<button class="chip on" data-coclear="1" title="会社の絞り込みを解除">会社：${esc(state.company)} ×</button>`:'')+
+    `<button class="chip fav${state.fav?' on':''}" data-fav="1">★ お気に入り<b>${favN}</b></button>`+
+    `<button class="chip${state.tag===''?' on':''}" data-tag="">全タグ</button>`+
+    tags.map(t=>`<button class="chip${state.tag===t?' on':''}" data-tag="${esc(t)}">${esc(t)}<b>${tc[t]}</b></button>`).join('');
+}
+function renderCatTabs(){
+  if(state.cat!=='*'&&state.cat!=='__none'&&!cats.some(k=>k.name===state.cat)) state.cat='*';
+  const none=cards.filter(c=>!catOf(c)).length;
+  if(state.cat==='__none'&&!none) state.cat='*';
+  const tab=(key,label,n,color,dot)=>`<button class="cattab${state.cat===key?' on':''}" data-cat="${esc(key)}" style="--cat:${color}">${dot?'<span class="dot"></span>':''}${esc(label)}<span class="n">${n}</span></button>`;
+  $('#cattabs').innerHTML=
+    tab('*','すべて',cards.length,'var(--indigo)',false)+
+    cats.map(k=>tab(k.name,k.name,cards.filter(c=>c.category===k.name).length,k.color,true)).join('')+
+    (none?tab('__none','未分類',none,'#9AA2AC',true):'')+
+    `<button class="cattab manage" data-manage="1">＋ 分類を管理</button>`;
+}
+function listHTML(list){
+  return `<table class="list"><thead><tr><th aria-label="お気に入り"></th><th>氏名</th><th>会社・施設 / 部署・役職</th><th>分類</th><th>電話（携帯）</th><th>メール</th><th>住所</th></tr></thead><tbody>`+
+    list.map(c=>`<tr class="row" data-id="${c.id}" tabindex="0">
+      <td class="star">${c.fav?'★':''}</td>
+      <td><div class="nm">${esc(displayName(c))}</div>${c.reading?`<div class="rd">${esc(c.reading)}</div>`:''}</td>
+      <td>${esc(c.company||'')}${c.office?`<div class="rd">${esc(c.office)}</div>`:''}${deptTitle(c)?`<div class="rd">${esc(deptTitle(c))}</div>`:''}</td>
+      <td><span class="catbadge" style="--cat:${catColor(c)}"><i></i>${esc(catName(c))}</span></td>
+      <td style="white-space:nowrap">${esc(c.mobile||'')}</td>
+      <td style="white-space:nowrap">${c.email?`${esc(c.email)}<button class="mail-btn" type="button" data-mail="${c.id}" aria-label="${esc(displayName(c))}にメールを書く">✉</button>`:''}</td>
+      <td style="max-width:44mm">${esc(c.address||'')}</td>
+    </tr>`).join('')+`</tbody></table>`;
+}
+const coKey=c=>String(c.company||'').normalize('NFKC').replace(/\s+/g,' ').trim();
+function groupsHTML(list){
+  const m=new Map();
+  list.forEach(c=>{ const k=coKey(c); if(!m.has(k)) m.set(k,[]); m.get(k).push(c) });
+  const keys=[...m.keys()].sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b,'ja'));
+  let i=0;
+  return keys.map(k=>{
+    const arr=m.get(k), cat=catOf(arr[0]);
+    return `<details class="cgroup" open>
+      <summary class="cg-head">
+        <span class="cg-arrow" aria-hidden="true">▸</span>
+        <h3>${esc(k||'（会社名なし）')}</h3>
+        <span class="cg-count">${(()=>{const o=new Set(arr.map(x=>(x.office||'').trim()).filter(Boolean)).size;return (o>1?o+'事業所・':'')+arr.length+'名'})()}</span>
+        ${cat?`<span class="catbadge" style="--cat:${cat.color}"><i></i>${esc(cat.name)}</span>`:''}
+        ${(()=>{const p=(arr.find(x=>x.phone)||{}).phone||'',a=(arr.find(x=>x.address)||{}).address||'';return (p||a)?`<span class="cg-meta">${p?`<span class="cg-tel">TEL ${esc(p)}</span>`:''}${a?`<span class="cg-addr">${esc(a)}</span>`:''}</span>`:''})()}
+        ${k&&state.company!==k?`<button class="cg-btn" type="button" data-co="${esc(k)}">この会社だけ表示</button>`:''}
+      </summary>
+      <div class="grid">${arr.map(c=>cardHTML(c,i++,false)).join('')}</div>
+    </details>`;
+  }).join('');
+}
+function bindOpen(el){
+  el.addEventListener('click',()=>openDetail(el.dataset.id));
+  el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(el.dataset.id)} });
+}
+function render(){
+  renderCatTabs();
+  renderChips();
+  const list=filtered().filter(c=>!$('#coSel').value||coKey(c)===$('#coSel').value);
+  const coN=new Set(list.map(coKey).filter(Boolean)).size;
+  $('#count').textContent=`全 ${cards.length} 名中 ${list.length} 名を表示（${coN}社）`;
+  { const coSel=$('#coSel'); const cur=coSel.value;
+    const cos=[...new Set(cards.map(coKey).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));
+    coSel.innerHTML='<option value="">すべての会社</option>'+cos.map(k=>'<option'+(k===cur?' selected':'')+' value="'+esc(k)+'">'+esc(k)+'</option>').join(''); }
+  $('#grid').innerHTML=''; $('#listwrap').innerHTML=''; $('#timeWrap').innerHTML=''; $('#timeWrap').hidden=true; $('#listwrap').hidden=true;
+  $('#groups').innerHTML=''; $('#groups').hidden=true;
+  $('#sheet').innerHTML=''; $('#sheet').hidden=true;
+  if(state.view==='list'){
+    if(list.length){
+      $('#listwrap').hidden=false; $('#listwrap').innerHTML=listHTML(list);
+      $('#listwrap').querySelectorAll('tr.row').forEach(bindOpen);
+    }
+  }else if(state.view==='sheet'){
+    if(list.length){
+      $('#sheet').hidden=false; $('#sheet').innerHTML=sheetHTML(list);
+      $('#sheet').querySelectorAll('.meishi').forEach(bindOpen);
+    }
+  }else if(state.view==='time'){
+    if(list.length){
+      $('#timeWrap').hidden=false; $('#timeWrap').innerHTML='<div class="pm-bar"><button type="button" class="pm-btn" id="tlMode">'+(tlMode()==='mo'?'会社ごとで見る':'月ごとで見る')+'</button></div>'+(tlMode()==='mo'?timeMonthHTML(list):timeHTML(list));
+      $('#timeWrap').querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.open)));
+      $('#timeWrap').querySelectorAll('[data-co]').forEach(el=>el.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();openCTime(el.dataset.co)}));
+    }
+  }else if(state.view==='ctime'){
+    const co=window.ctimeCo||'';
+    const mem=list.filter(c=>c.company===co);
+    if(!mem.length){ state.view='list'; render(); return }
+    $('#timeWrap').hidden=false; $('#timeWrap').innerHTML=ctimeHTML(co,mem);
+    $('#timeWrap').querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.open)));
+    const b=$('#ctBack'); if(b) b.addEventListener('click',()=>{ window.ctimeCo=null; setView('time'); render(); });
+  }else if(state.view==='company'){
+    if(list.length){
+      $('#groups').hidden=false; $('#groups').innerHTML=groupsHTML(list);
+      $('#groups').querySelectorAll('.meishi').forEach(bindOpen);
+    }
+  }else{
+    $('#grid').innerHTML='<div class="pm-bar"><button type="button" class="pm-btn'+(photoOn()?' on':'')+'" id="pmToggle">'+(photoOn()?'文字カードで見る':'名刺の写真で見る')+'</button>'+(photoOn()?'<span class="pm-hint">写真を撮っていない名刺は文字カードで出ます</span>':'')+'</div>'+(photoOn()?photoGridHTML(list):list.map((c,i)=>cardHTML(c,i,false)).join(''));
+    $('#grid').querySelectorAll('.meishi').forEach(bindOpen);
+  }
+  $('#empty').classList.toggle('show',cards.length===0);
+  $('#noResult').classList.toggle('show',cards.length>0&&list.length===0);
+  $('#cattabs').classList.toggle('show',cards.length>0);
+  $('#toolbar').classList.toggle('show',cards.length>0);
+  $('#banner').classList.toggle('show',!bannerDismissed && cards.some(c=>c.sample));
+}
+
+/* ───────────────────────── 詳細 ───────────────────────── */
+/* ───────── その場で修正できる項目 ───────── */
+const BASE_DEFS=[
+  {k:'company',l:'会社名・施設名',full:true},
+  {k:'dept',l:'部署'},{k:'title',l:'役職'},
+  {k:'lastname',l:'姓'},{k:'firstname',l:'名'},{k:'reading',l:'ふりがな'},
+  {k:'category',l:'分類',type:'cat'},
+  {k:'phone',l:'電話番号',copy:1,type:'tel'},{k:'mobile',l:'携帯番号',copy:1,type:'tel'},
+  {k:'email',l:'メールアドレス',copy:1,type:'email'},{k:'url',l:'URL',copy:1,type:'url'},
+  {k:'address',l:'住所',copy:1,full:true,multi:true},
+  {k:'received',l:'受取日',type:'date'},{k:'tags',l:'タグ',type:'tags'},
+  {k:'memo',l:'メモ',full:true,multi:true},
+];
+const defsFor=()=>BASE_DEFS.concat(cfields.map(f=>({k:'x:'+f.id,l:f.name})));
+const fmtDT=s=>{ const d=new Date(s); if(isNaN(d)) return '';
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` };
+function getV(c,d){
+  if(d.k.startsWith('x:')) return (c.extra||{})[d.k.slice(2)]||'';
+  if(d.type==='tags') return (c.tags||[]).join(', ');
+  return c[d.k]||'';
+}
+function setV(c,d,v){
+  if(d.k.startsWith('x:')) c.extra=Object.assign({},c.extra,{[d.k.slice(2)]:v});
+  else if(d.type==='tags') c.tags=[...new Set(v.split(/[、,，\s]+/).map(t=>t.trim()).filter(Boolean))];
+  else c[d.k]=v;
+}
+function dispV(c,d,v){
+  if(d.type==='cat') return `<span class="catbadge" style="--cat:${catColor(c)}"><i></i>${esc(catName(c))}</span>`;
+  if(d.type==='tags') return (c.tags||[]).map(t=>`<span class="pill">${esc(t)}</span>`).join(' ');
+  if(d.type==='date') return esc(fmtDate(v));
+  if(d.k==='email'&&v) return esc(v)+`<button class="mail-btn" type="button" data-mail="${c.id}">✉ メールを書く</button>${mailCfg.collaboUrl?`<button class="mail-btn collabo" type="button" data-collabo="${c.id}">📮 コラボ360へ</button>`:''}`;
+  return esc(v);
+}
+function efHTML(c,d){
+  const v=getV(c,d), has=d.type==='cat'||!!v;
+  return `<div class="field ef${d.full?' full':''}${has?'':' empty-f'}" data-ef="${esc(d.k)}" data-id="${c.id}">
+    <label>${esc(d.l)}<button class="ef-btn" type="button" data-efedit title="${esc(d.l)}を修正" aria-label="${esc(d.l)}を修正">✎ 修正</button></label>
+    ${has?`<div class="v${d.copy?' copyable':''}"${d.copy?` title="クリックでコピー" data-copy="${esc(v)}"`:''}>${dispV(c,d,v)}</div>`
+         :`<button class="ef-add" type="button" data-efedit>＋ 追加</button>`}
+  </div>`;
+}
+function editFieldsHTML(c,compact){
+  const defs=defsFor(), empties=defs.filter(d=>d.type!=='cat'&&!getV(c,d)).length;
+  return defs.map(d=>efHTML(c,d)).join('')
+    + (compact&&empties?`<div class="field full"><button class="ef-more" type="button" data-more="${c.id}" data-n="${empties}">${state.expanded.has(c.id)?'空欄の項目を隠す':`＋ 空欄の項目に書き足す（${empties}）`}</button></div>`:'');
+}
+function historyHTML(c,limit){
+  const h=(c.history||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const shown=limit?h.slice(0,limit):h;
+  return `<div class="field full hist" data-hist="${c.id}">
+    <label>対応履歴（${h.length}件）</label>
+    <form class="hist-add" data-histadd="${c.id}">
+      <input type="date" value="${today()}" aria-label="日付">
+      <input type="text" placeholder="例）電話で見積もりの件を確認" aria-label="対応内容">
+      <button class="btn subtle sm" type="submit">＋ 追加</button>
+    </form>
+    ${shown.length?`<ul class="hist-list">${shown.map(e=>`<li data-hid="${e.id}"><time>${esc(fmtDate(e.date))}</time><span class="ht">${esc(e.text)}</span><button type="button" data-hedit>修正</button><button type="button" data-hdel>削除</button></li>`).join('')}</ul>`
+      :'<div class="hist-empty">まだ履歴はありません。電話・訪問・メールなどのやりとりを記録できます。</div>'}
+    ${limit&&h.length>limit?`<button class="ef-more" type="button" data-open="${c.id}">すべての履歴を見る（${h.length}件）</button>`:''}
+  </div>`;
+}
+function fieldRows(c){
+  return editFieldsHTML(c,false) + historyHTML(c,0)
+    + (c.updated?`<div class="updated">最終更新 ${esc(fmtDT(c.updated))}</div>`:'');
+}
+function sheetHTML(list){
+  return list.map((c,i)=>`<section class="srow${state.expanded.has(c.id)?' show-empty':''}" data-row="${c.id}">
+    <div class="s-left">
+      ${cardHTML(c,i,false)}
+      ${c.image?`<img class="s-photo" src="${c.image}" alt="${esc(displayName(c))}の名刺の写真">`:''}
+      <div class="s-acts">
+        <button class="btn subtle sm" type="button" data-editfull="${c.id}">フォームで編集</button>
+        <button class="btn subtle sm" type="button" data-open="${c.id}">詳細を開く</button>
+      </div>
+    </div>
+    <div class="s-right"><div class="fields">${editFieldsHTML(c,true)}${historyHTML(c,2)}</div></div>
+  </section>`).join('');
+}
+function startEdit(field){
+  const c=cards.find(x=>x.id===field.dataset.id), d=defsFor().find(x=>x.k===field.dataset.ef);
+  if(!c||!d) return;
+  document.querySelectorAll('.field.editing').forEach(cancelEdit);
+  const v=getV(c,d);
+  let ctl;
+  if(d.type==='cat') ctl=`<select class="ef-in"><option value="">未分類</option>${cats.map(k=>`<option value="${esc(k.name)}"${k.name===c.category?' selected':''}>${esc(k.name)}</option>`).join('')}</select>`;
+  else if(d.multi) ctl=`<textarea class="ef-in">${esc(v)}</textarea>`;
+  else ctl=`<input class="ef-in" type="${['date','tel','email','url'].includes(d.type)?d.type:'text'}" value="${esc(v)}"${d.type==='tags'?' placeholder="カンマ区切り"':''}>`;
+  field._html=field.innerHTML; field.classList.add('editing');
+  field.innerHTML=`<label>${esc(d.l)}</label>${ctl}<div class="ef-acts">
+    <button class="btn primary sm" type="button" data-efsave>保存</button>
+    <button class="btn subtle sm" type="button" data-efcancel>取消</button>
+    <span class="ef-hint">${d.multi?'Ctrl+Enter で保存':'Enter で保存'}・Esc で取消</span></div>`;
+  const inp=field.querySelector('.ef-in'); inp.focus();
+  if(inp.tagName==='INPUT'&&inp.type==='text') inp.select();
+}
+function cancelEdit(f){ if(f._html!=null){ f.innerHTML=f._html; f._html=null } f.classList.remove('editing') }
+function saveEdit(f){
+  const c=cards.find(x=>x.id===f.dataset.id), d=defsFor().find(x=>x.k===f.dataset.ef);
+  if(!c||!d) return;
+  const nv=f.querySelector('.ef-in').value.trim();
+  const test=Object.assign({},c); setV(test,d,nv);
+  if(!String(test.company||'').trim()&&!String(test.lastname||'').trim()){ toast('会社名と姓のどちらか一方は必要です'); return }
+  if(getV(test,d)===getV(c,d)){ cancelEdit(f); return }
+  setV(c,d,nv); c.updated=new Date().toISOString();
+  saveCards(); afterChange(c.id); toast(`「${d.l}」を保存しました`);
+}
+function afterChange(id){
+  render();
+  if($('#detailOverlay').classList.contains('open')&&currentId===id) openDetail(id,true);
+}
+
+/* ───────── 入力項目（自由項目）の管理 ───────── */
+const LS_FIELDS='meishicho.fields.v1';
+let cfields=[], formExtraSrc={};
+function loadFields(){
+  try{ cfields=JSON.parse(store.get(LS_FIELDS)||'[]') }catch(e){ cfields=[] }
+  if(!Array.isArray(cfields)) cfields=[];
+}
+function saveFields(){ store.set(LS_FIELDS,JSON.stringify(cfields)) }
+function renderFormExtra(keep){
+  const cur={};
+  if(keep) document.querySelectorAll('#f-extra input[data-fid]').forEach(i=>cur[i.dataset.fid]=i.value);
+  $('#f-extra').innerHTML=cfields.length
+    ? cfields.map(f=>`<div class="f"><label>${esc(f.name)}</label><input type="text" data-fid="${f.id}" value="${esc(keep?(cur[f.id]??''):(formExtraSrc[f.id]||''))}"></div>`).join('')
+    : '<p class="hint" style="margin:0;grid-column:1/-1">担当者・契約番号・誕生日など、自分で使う項目を追加できます。</p>';
+}
+function openFields(){ renderFieldList(); openOverlay('#fieldOverlay') }
+function renderFieldList(){
+  $('#fieldList').innerHTML=cfields.map((f,i)=>`<div class="catrow" style="--cat:#B9C2CB">
+      <span class="sw"></span>
+      <input value="${esc(f.name)}" data-fi="${i}" maxlength="20" aria-label="項目名">
+      <span class="cnt">${cards.filter(c=>(c.extra||{})[f.id]).length}件</span>
+      <button type="button" data-fdel="${i}">削除</button>
+    </div>`).join('') || '<p class="hint" style="margin-top:0">まだ追加の項目はありません。下の欄に項目名を入れて「追加」を押してください。</p>';
+}
+function fieldsChanged(){
+  saveFields(); renderFieldList(); render();
+  if($('#detailOverlay').classList.contains('open')&&currentId) openDetail(currentId,true);
+  if($('#formOverlay').classList.contains('open')) renderFormExtra(true);
+}
+const nameTaken=n=>cfields.some(f=>f.name===n)||BASE_DEFS.some(d=>d.l===n);
+$('#fieldAddForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const n=$('#fieldNew').value.trim(); if(!n) return;
+  if(nameTaken(n)){ toast('同じ名前の項目があります'); return }
+  cfields.push({id:'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:n});
+  $('#fieldNew').value=''; fieldsChanged(); toast(`項目「${n}」を追加しました`);
+});
+$('#fieldList').addEventListener('change',e=>{
+  const inp=e.target.closest('input[data-fi]'); if(!inp) return;
+  const f=cfields[+inp.dataset.fi], n=inp.value.trim();
+  if(!n||n===f.name){ inp.value=f.name; return }
+  if(nameTaken(n)){ toast('同じ名前の項目があります'); inp.value=f.name; return }
+  f.name=n; fieldsChanged(); toast('項目名を変更しました');
+});
+$('#fieldList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-fdel]'); if(!b) return;
+  const i=+b.dataset.fdel, f=cfields[i], n=cards.filter(c=>(c.extra||{})[f.id]).length;
+  if(!confirm(`項目「${f.name}」を削除しますか？${n?`\n${n}件の名刺に入力した内容も消えます。`:''}`)) return;
+  cards.forEach(c=>{ if(c.extra&&f.id in c.extra){ c.extra=Object.assign({},c.extra); delete c.extra[f.id] } });
+  cfields.splice(i,1); saveCards(); fieldsChanged(); toast('項目を削除しました');
+});
+$('#openFieldsFromForm').addEventListener('click',openFields);
+
+/* ───────── その場修正・対応履歴のイベント ───────── */
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-efedit]');
+  if(ed){ e.stopPropagation(); startEdit(ed.closest('.field[data-ef]')); return }
+  const sv=e.target.closest('[data-efsave]');
+  if(sv){ saveEdit(sv.closest('.field[data-ef]')); return }
+  const cc=e.target.closest('[data-efcancel]');
+  if(cc){ cancelEdit(cc.closest('.field[data-ef]')); return }
+  const he=e.target.closest('[data-hedit]'), hd=e.target.closest('[data-hdel]');
+  if(he||hd){
+    const wrap=(he||hd).closest('[data-hist]'), hid=(he||hd).closest('li').dataset.hid;
+    const c=cards.find(x=>x.id===wrap.dataset.hist); if(!c) return;
+    const h=(c.history||[]).find(x=>x.id===hid); if(!h) return;
+    if(he){
+      const t=prompt('対応内容を修正',h.text); if(t==null) return;
+      const nt=t.trim(); if(!nt){ toast('内容が空のため変更しませんでした'); return }
+      c.history=c.history.map(x=>x.id===hid?{...x,text:nt}:x); toast('履歴を修正しました');
+    }else{
+      if(!confirm(`${fmtDate(h.date)}「${h.text}」を削除しますか？`)) return;
+      c.history=c.history.filter(x=>x.id!==hid); toast('履歴を削除しました');
+    }
+    c.updated=new Date().toISOString(); saveCards(); afterChange(c.id);
+  }
+});
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('form[data-histadd]'); if(!f) return;
+  e.preventDefault();
+  const [dIn,tIn]=f.querySelectorAll('input'), text=tIn.value.trim();
+  if(!text){ toast('対応内容を入力してください'); tIn.focus(); return }
+  const c=cards.find(x=>x.id===f.dataset.histadd); if(!c) return;
+  c.history=(c.history||[]).concat({id:uid(),date:dIn.value||today(),text});
+  c.updated=new Date().toISOString(); saveCards(); afterChange(c.id); toast('対応履歴を追加しました');
+});
+document.addEventListener('keydown',e=>{
+  const t=e.target; if(!t.classList||!t.classList.contains('ef-in')) return;
+  const f=t.closest('.field[data-ef]');
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); cancelEdit(f); return }
+  if(e.key==='Enter'&&!e.isComposing&&(t.tagName!=='TEXTAREA'||e.ctrlKey||e.metaKey)){ e.preventDefault(); saveEdit(f) }
+},true);
+$('#sheet').addEventListener('click',e=>{
+  const cp=e.target.closest('[data-copy]'); if(cp&&!cp.closest('.editing')){ copyText(cp.dataset.copy); return }
+  const op=e.target.closest('[data-open]'); if(op){ openDetail(op.dataset.open); return }
+  const ef=e.target.closest('[data-editfull]'); if(ef){ openForm(ef.dataset.editfull); return }
+  const mo=e.target.closest('[data-more]');
+  if(mo){
+    const id=mo.dataset.more, row=mo.closest('.srow'), on=!state.expanded.has(id);
+    on?state.expanded.add(id):state.expanded.delete(id);
+    row.classList.toggle('show-empty',on);
+    mo.textContent=on?'空欄の項目を隠す':`＋ 空欄の項目に書き足す（${mo.dataset.n}）`;
+  }
+});
+
+/* ───────── メール作成 ───────── */
+function timeHTML(list){
+  const es=[];
+  list.forEach(c=>(c.history||[]).forEach(h=>{ if(h&&h.date) es.push({d:String(h.date),t:h.text||'',c}) }));
+  es.sort((a,b)=>b.d.localeCompare(a.d)||String(a.c.company||'').localeCompare(String(b.c.company||''),'ja'));
+  if(!es.length) return '<p class="hint" style="padding:6mm 0">まだ対応履歴がありません。名刺の詳細から「対応履歴」に追加すると、ここに会社ごと・月ごとで並びます。</p>';
+  const WD=['日','月','火','水','木','金','土'];
+  const day=d=>{ const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return fmtDate(d); const dt=new Date(+m[1],+m[2]-1,+m[3]); return (+m[2])+'/'+(+m[3])+'（'+WD[dt.getDay()]+'）' };
+  const lab=d=>{ const m=String(d).match(/^(\d{4})-(\d{2})/); return m?m[1]+'年'+(+m[2])+'月':String(d) };
+  const byCo=new Map();
+  es.forEach(e=>{ const ck=coKey(e.c)||'（会社名なし）'; if(!byCo.has(ck)) byCo.set(ck,[]); byCo.get(ck).push(e) });
+  const coKeys=[...byCo.keys()].sort((a,b)=>byCo.get(b)[0].d.localeCompare(byCo.get(a)[0].d));
+  return coKeys.map(ck=>{
+    const items=byCo.get(ck);
+    const onm=e=>{ const o=e.c.office||'本社'; return /本社/.test(o)?'本社':o };
+    const mkCols=(all,withAll)=>{
+    const off=new Map();
+    all.forEach(e=>{ const ok=onm(e); if(!off.has(ok)) off.set(ok,[]); off.get(ok).push(e) });
+    const ks=[...off.keys()].sort((x,y)=>(y==='本社')-(x==='本社'));
+    const cols=(ks.length>1&&withAll?[['全体（すべての事業所）',all,'all']]:[]).concat(ks.map(k=>[k,off.get(k),k==='本社'?'hq':'']));
+    return '<div class="offgrid">'+cols.map(([ok,oi,kind])=>{
+      const months=[];
+      oi.forEach(e=>{ const mo=String(e.d).slice(0,7); let g=months.find(x=>x.mo===mo); if(!g){ g={mo,label:lab(e.d),items:[]}; months.push(g) } g.items.push(e) });
+      return '<details class="tl-offwrap'+(kind?' off-'+kind:'')+'" open><summary class="tl-off"><span class="tl-arr">▸</span>'+esc(ok)+'<span class="tl-ocnt">'+oi.length+'件</span></summary>'+months.map(g=>
+        '<section class="tl-month"><header class="tl-mh" style="background:'+(MCOLORS[g.mo.slice(5,7)]||'#EEF1F7')+'"><span class="tl-mlab">'+esc(g.label)+'</span><span class="tl-mcnt">'+g.items.length+'件</span></header><div class="tl-body">'+
+        g.items.map(e=>'<div class="tl-row" data-open="'+e.c.id+'" role="button" tabindex="0"><span class="tl-dot"></span><div class="tl-main"><div class="tl-top"><span class="tl-day">'+esc(day(e.d))+'</span><span class="tl-n">'+esc(displayName(e.c))+'</span>'+(kind==='all'?'<span class="tl-ofs">'+esc(onm(e))+'</span>':'')+'</div>'+(e.t?'<span class="tl-t">'+esc(e.t)+'</span>':'')+'</div></div>').join('')+
+        '</div></section>').join('')+'</details>';
+    }).join('')+'</div>';
+  };
+    const head='<summary class="tl-coh"><span class="tl-arr">▸</span><span class="tl-con">'+esc(ck)+'</span><span class="tl-coc">'+new Set(items.map(e=>e.c.id)).size+'人・'+items.length+'件</span><button type="button" class="tl-open" data-co="'+esc(ck)+'">会社ページ →</button></summary>';
+    return '<details class="tl-sec" open>'+head+mkCols(items,false)+'</details>';
+  }).join('');
+}
+function ctimeHTML(co,mem){
+  const es=[];
+  mem.forEach(c=>(c.history||[]).forEach(h=>{ if(h&&h.date) es.push({d:String(h.date),t:h.text||'',c}) }));
+  es.sort((a,b)=>b.d.localeCompare(a.d)||String(a.c.lastname||'').localeCompare(String(b.c.lastname||''),'ja'));
+  const WD=['日','月','火','水','木','金','土'];
+  const day=d=>{ const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return fmtDate(d); const dt=new Date(+m[1],+m[2]-1,+m[3]); return (+m[2])+'/'+(+m[3])+'（'+WD[dt.getDay()]+'）' };
+  const lab=d=>{ const m=String(d).match(/^(\d{4})-(\d{2})/); return m?m[1]+'年'+(+m[2])+'月':String(d) };
+  const allP=mem.slice().sort((a,b)=>String(a.lastname||'').localeCompare(String(b.lastname||''),'ja'));
+  const chips=allP.slice(0,5).map(c=>'<button type="button" class="ct-chip" data-open="'+c.id+'">'+esc(displayName(c))+'</button>').join('')+(allP.length>5?'<span class="ct-chip more">ほか'+(allP.length-5)+'名</span>':'');
+  const meta=es.length?('記録 '+es.length+'件 ・ 名刺 '+mem.length+'人分 ・ '+lab(es[es.length-1].d)+' 〜 '+lab(es[0].d)):('名刺 '+mem.length+'人分 ・ 記録はまだありません');
+  const onm=e=>{ const o=e.c.office||'本社'; return /本社/.test(o)?'本社':o };
+  const mkCols=(all)=>{
+    const off=new Map();
+    all.forEach(e=>{ const ok=onm(e); if(!off.has(ok)) off.set(ok,[]); off.get(ok).push(e) });
+    const ks=[...off.keys()].sort((x,y)=>(y==='本社')-(x==='本社'));
+    const cols=(ks.length>1?[['全体（すべての事業所）',all,'all']]:[]).concat(ks.map(k=>[k,off.get(k),k==='本社'?'hq':'']));
+    return '<div class="offgrid">'+cols.map(([ok,oi,kind])=>{
+      const months=[];
+      oi.forEach(e=>{ const mo=String(e.d).slice(0,7); let g=months.find(x=>x.mo===mo); if(!g){ g={mo,label:lab(e.d),items:[]}; months.push(g) } g.items.push(e) });
+      return '<details class="tl-offwrap'+(kind?' off-'+kind:'')+'" open><summary class="tl-off"><span class="tl-arr">▸</span>'+esc(ok)+'<span class="tl-ocnt">'+oi.length+'件</span></summary>'+months.map(g=>
+        '<section class="tl-month"><header class="tl-mh" style="background:'+(MCOLORS[g.mo.slice(5,7)]||'#EEF1F7')+'"><span class="tl-mlab">'+esc(g.label)+'</span><span class="tl-mcnt">'+g.items.length+'件</span></header><div class="tl-body">'+
+        g.items.map(e=>'<div class="tl-row" data-open="'+e.c.id+'" role="button" tabindex="0"><span class="tl-dot"></span><div class="tl-main"><div class="tl-top"><span class="tl-day">'+esc(day(e.d))+'</span><span class="tl-n">'+esc(displayName(e.c))+'</span>'+(kind==='all'?'<span class="tl-ofs">'+esc(onm(e))+'</span>':'')+'</div>'+(e.t?'<span class="tl-t">'+esc(e.t)+'</span>':'')+'</div></div>').join('')+
+        '</div></section>').join('')+'</details>';
+    }).join('')+'</div>';
+  };
+  const mkAlign=all=>{
+    const off=new Map();
+    all.forEach(e=>{ const ok=onm(e); if(!off.has(ok)) off.set(ok,[]); off.get(ok).push(e) });
+    const ks=[...off.keys()].sort((x,y)=>(y==='本社')-(x==='本社'));
+    const cols=(ks.length>1?[['全体（すべての事業所）',all,'all']]:[]).concat(ks.map(k=>[k,off.get(k),k==='本社'?'hq':'']));
+    const mos=[...new Set(all.map(e=>String(e.d).slice(0,7)))].sort().reverse();
+    const cell=(oi,kind,mo)=>{
+      const items=oi.filter(e=>String(e.d).slice(0,7)===mo);
+      if(!items.length) return '<div class="og-e"></div>';
+      return '<section class="tl-month"><header class="tl-mh" style="background:'+(MCOLORS[mo.slice(5,7)]||'#EEF1F7')+'"><span class="tl-mlab">'+esc(lab(mo+'-01'))+'</span><span class="tl-mcnt">'+items.length+'件</span></header><div class="tl-body">'+
+        items.map(e=>'<div class="tl-row" data-open="'+e.c.id+'" role="button" tabindex="0"><span class="tl-dot"></span><div class="tl-main"><div class="tl-top"><span class="tl-day">'+esc(day(e.d))+'</span><span class="tl-n">'+esc(displayName(e.c))+'</span>'+(kind==='all'?'<span class="tl-ofs">'+esc(onm(e))+'</span>':'')+'</div>'+(e.t?'<span class="tl-t">'+esc(e.t)+'</span>':'')+'</div></div>').join('') +
+        '</div></section>';
+    };
+    return '<div class="og" style="grid-template-columns:repeat('+cols.length+',minmax(0,1fr))">'+
+      cols.map(c=>'<div class="og-h'+(c[2]?' og-'+c[2]:'')+'"><span>'+esc(c[0])+'</span><span class="tl-ocnt">'+c[1].length+'件</span></div>').join('')+
+      mos.map(mo=>cols.map(c=>cell(c[1],c[2],mo)).join('')).join('')+'</div>';
+  };
+  let body=es.length?mkAlign(es):'';
+  if(!body) body='<p class="hint" style="padding:4mm 0">この会社の対応履歴はまだありません。名刺の詳細から「対応履歴」を追加すると表示されます。</p>';
+  return '<button class="tl-back" type="button" id="ctBack">← 時系列へ戻る</button>'+
+    '<section class="ct-hero"><h2 class="ct-co">'+esc(co)+'</h2><p class="ct-meta">'+esc(meta)+'</p><div class="ct-chips">'+chips+'</div></section>'+body;
+}
+function openCTime(co){ window.ctimeCo=co; state.view='ctime'; render(); window.scrollTo(0,0); }
+const MCOLORS={'01':'#D6E4F7','02':'#E8DBF7','03':'#FADBE3','04':'#FFE4CC','05':'#FAF3C8','06':'#DFF2D0','07':'#CDEEEE','08':'#FFD9B8','09':'#F5E3B8','10':'#DCE4F8','11':'#EFE0D1','12':'#F2DBE8'};
+const photoOn=()=>localStorage.getItem('meishicho.photo.v1')==='1';
+const tlMode=()=>localStorage.getItem('meishicho.tlmode.v1')||'co';
+function photoGridHTML(list){
+  return list.map(c=>{
+    const co=((c.company||'')+' '+(c.dept||'')).trim();
+    const cn=catName(c);
+    return '<div class="pcard" data-open="'+c.id+'" role="button" tabindex="0">'+
+      '<div class="pc-imgwrap">'+
+      (c.image?'<img class="pc-img" src="'+c.image+'" alt="'+esc(displayName(c))+'の名刺の写真">':'<div class="pc-none">写真なし</div>')+
+      (cn&&cn!=='未分類'&&cn!=='分類なし'?'<span class="pc-cat">'+esc(cn)+'</span>':'')+
+      (c.fav?'<span class="pc-fav">★</span>':'')+
+      '</div>'+
+      '<div class="pc-cap"><span class="pc-n">'+esc(displayName(c))+'</span>'+(co?'<span class="pc-co">'+esc(co)+'</span>':'')+'</div></div>';
+  }).join('');
+}
+function timeMonthHTML(list){
+  const es=[];
+  list.forEach(c=>(c.history||[]).forEach(h=>{ if(h&&h.date) es.push({d:String(h.date),t:h.text||'',c}) }));
+  es.sort((a,b)=>b.d.localeCompare(a.d)||String(a.c.company||'').localeCompare(String(b.c.company||''),'ja'));
+  if(!es.length) return '<p class="hint" style="padding:6mm 0">まだ対応履歴がありません。名刺の詳細から「対応履歴」に追加すると、ここに月ごとで並びます。</p>';
+  const WD=['日','月','火','水','木','金','土'];
+  const day=d=>{ const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return fmtDate(d); const dt=new Date(+m[1],+m[2]-1,+m[3]); return (+m[2])+'/'+(+m[3])+'（'+WD[dt.getDay()]+'）' };
+  const lab=d=>{ const m=String(d).match(/^(\d{4})-(\d{2})/); return m?m[1]+'年'+(+m[2])+'月':String(d) };
+  const months=[];
+  es.forEach(e=>{ const mo=String(e.d).slice(0,7); let g=months.find(x=>x.mo===mo); if(!g){ g={mo,label:lab(e.d),items:[]}; months.push(g) } g.items.push(e) });
+  return months.map(g=>{
+    const sub=new Map();
+    g.items.forEach(e=>{ const ck=coKey(e.c)||'（会社名なし）'; if(!sub.has(ck)) sub.set(ck,[]); sub.get(ck).push(e) });
+    const body=[...sub.entries()].map(pair=>{
+      const items=pair[1];
+      const co2=pair[0]==='（会社名なし）'?'':'<div class="tl-co2" data-co="'+esc(pair[0])+'" role="button" title="会社ごとの時系列を見る">'+esc(pair[0])+'（'+items.length+'件）</div>';
+      return co2+items.map(e=>'<div class="tl-row" data-open="'+e.c.id+'" role="button" tabindex="0"><span class="tl-dot"></span><div class="tl-main"><div class="tl-top"><span class="tl-day">'+esc(day(e.d))+'</span><span class="tl-n">'+esc(displayName(e.c))+'</span></div>'+(e.t?'<span class="tl-t">'+esc(e.t)+'</span>':'')+'</div></div>').join('');
+    }).join('');
+    return '<section class="tl-month"><header class="tl-mh" style="background:'+(MCOLORS[g.mo.slice(5,7)]||'#EEF1F7')+'"><span class="tl-mlab">'+esc(g.label)+'</span><span class="tl-mcnt">'+g.items.length+'件</span></header><div class="tl-body">'+body+'</div></section>';
+  }).join('');
+}
+const LS_MAIL='meishicho.mail.v1';
+let mailCfg={subject:'',body:'{会社名}\n{部署} {氏名} 様\n\nいつもお世話になっております。\n\n',sign:'',collaboUrl:''};
+try{ Object.assign(mailCfg,JSON.parse(store.get(LS_MAIL)||'{}')) }catch(e){}
+let mailList=[];
+const fillTpl=(t,c)=>String(t||'')
+  .replace(/\{会社名\}/g,c.company||'').replace(/\{氏名\}/g,displayName(c)==='(氏名なし)'?'':displayName(c).replace('　',' '))
+  .replace(/\{姓\}/g,c.lastname||'').replace(/\{名\}/g,c.firstname||'')
+  .replace(/\{部署\}/g,c.dept||'').replace(/\{役職\}/g,c.title||'')
+  .replace(/[ 　]+\n/g,'\n').replace(/^\n+/,'');
+function openMail(ids){
+  const all=ids.map(id=>cards.find(c=>c.id===id)).filter(Boolean);
+  mailList=all.filter(c=>c.email);
+  if(!mailList.length){ toast('メールアドレスが登録されている名刺がありません'); return }
+  const one=mailList.length===1, sign=mailCfg.sign?'\n'+mailCfg.sign:'';
+  $('#mailTitle').textContent=one?`${displayName(mailList[0])} さんにメールを書く`:`${mailList.length}名にまとめてメールを書く`;
+  $('#mToLabel').textContent=one?'宛先':`宛先（BCC・${mailList.length}名）`;
+  $('#mTo').value=mailList.map(c=>c.email).join(', ');
+  $('#mSubject').value=one?fillTpl(mailCfg.subject,mailList[0]):'';
+  $('#mBody').value=one?fillTpl(mailCfg.body,mailList[0])+sign:sign.replace(/^\n/,'');
+  const skipped=all.length-mailList.length;
+  $('#mNote').textContent=(one?'':'まとめて送るときは、お互いのアドレスが見えないよう BCC にしています。宛名の差し込みはできません。')
+    +(skipped?` メールアドレスのない ${skipped}名は除きました。`:'');
+  $('#mCollabo').hidden=!mailCfg.collaboUrl;
+  openOverlay('#mailOverlay');
+  setTimeout(()=>$('#mSubject').focus(),50);
+}
+const mailParams=()=>({to:$('#mTo').value.replace(/\s/g,''),su:$('#mSubject').value,body:$('#mBody').value});
+$('#mMailto').addEventListener('click',()=>{
+  const p=mailParams(), multi=mailList.length>1;
+  const url=`mailto:${multi?'':p.to}?${multi?'bcc='+encodeURIComponent(p.to)+'&':''}subject=${encodeURIComponent(p.su)}&body=${encodeURIComponent(p.body)}`;
+  if(url.length>1900) toast('本文が長いため、メールソフトによっては途中で切れます。「本文をコピー」もお使いください');
+  location.href=url;
+});
+$('#mGmail').addEventListener('click',()=>{
+  const p=mailParams(), multi=mailList.length>1;
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&${multi?'bcc':'to'}=${encodeURIComponent(p.to)}&su=${encodeURIComponent(p.su)}&body=${encodeURIComponent(p.body)}`,'_blank','noopener');
+});
+$('#mCollabo').addEventListener('click',()=>{
+  copyText($('#mTo').value);
+  window.open(mailCfg.collaboUrl,'_blank','noopener');
+  toast('宛先をコピーしました。コラボの新規メールの宛先に貼り付けてください');
+});
+$('#mailOverlay').addEventListener('click',e=>{
+  const b=e.target.closest('[data-cp]'); if(b) copyText($('#'+b.dataset.cp).value);
+});
+function openMailCfg(){
+  $('#cfgSubject').value=mailCfg.subject; $('#cfgBody').value=mailCfg.body;
+  $('#cfgSign').value=mailCfg.sign; $('#cfgUrl').value=mailCfg.collaboUrl;
+  openOverlay('#mailCfgOverlay');
+}
+$('#mCfgLink').addEventListener('click',()=>{ closeOverlay('#mailOverlay'); openMailCfg() });
+$('#cfgSave').addEventListener('click',()=>{
+  const u=$('#cfgUrl').value.trim();
+  if(u&&!/^https?:\/\//i.test(u)){ toast('URL は http:// または https:// で始まるものを入れてください'); return }
+  mailCfg={subject:$('#cfgSubject').value,body:$('#cfgBody').value,sign:$('#cfgSign').value,collaboUrl:u};
+  store.set(LS_MAIL,JSON.stringify(mailCfg)); closeOverlay('#mailCfgOverlay'); toast('メールの設定を保存しました');
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-mail]'); if(!b) return;
+  e.preventDefault(); e.stopPropagation(); openMail([b.dataset.mail]);
+},true);
+document.addEventListener('click',e=>{
+  const cb=e.target.closest('[data-collabo]'); if(!cb) return;
+  e.preventDefault(); e.stopPropagation();
+  const cc=cards.find(x=>x.id===cb.dataset.collabo); if(!cc||!cc.email||!mailCfg.collaboUrl) return;
+  copyText(cc.email); window.open(mailCfg.collaboUrl,'_blank','noopener');
+  toast('宛先をコピーしました。コラボの新規メールの宛先に貼り付けてください');
+},true);
+
+/* ───────── NI Collabo 360 アドレス帳用 CSV ───────── */
+/*COLLABO_START*/
+const CB_RULES=[
+  ['lastkana',['姓かな','姓ふりがな','姓フリガナ','姓カナ','姓よみ','姓ヨミ','セイ','せい','氏フリガナ','氏かな']],
+  ['firstkana',['名かな','名ふりがな','名フリガナ','名カナ','名よみ','名ヨミ','メイ','めい']],
+  ['companykana',['会社名かな','会社名ふりがな','会社名フリガナ','会社名カナ','会社かな','会社フリガナ','勤務先フリガナ','勤務先かな']],
+  ['fullkana',['氏名かな','氏名ふりがな','氏名フリガナ','氏名カナ','フリガナ','ふりがな','よみがな','ヨミガナ','よみ','ヨミ','カナ']],
+  ['mobile',['携帯電話番号','携帯電話','携帯番号','携帯','モバイル','mobile']],
+  ['fax',['fax番号','fax','ファックス','ファクス']],
+  ['email',['メールアドレス','eメール','email','mail','メール']],
+  ['zip',['郵便番号','〒','zip']],
+  ['phone',['電話番号','電話','tel','phone']],
+  ['address',['住所','所在地','address']],
+  ['company',['会社名','会社','勤務先名','勤務先','企業名','法人名','取引先名','取引先','組織名','company']],
+  ['dept',['部署名','部署','所属','部門','department']],
+  ['title',['役職名','役職','肩書き','肩書','title']],
+  ['url',['ホームページ','webサイト','url','web']],
+  ['memo',['備考','メモ','コメント','memo','note']],
+  ['fullname',['氏名','名前','表示名','フルネーム','name']],
+  ['lastname',['姓','氏','苗字','名字','lastname']],
+  ['firstname',['名','firstname']],
+];
+const cbNorm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\s()（）［］\[\]「」・:：\-_]/g,'');
+function cbAutoKey(h){
+  const n=cbNorm(h); if(!n) return '';
+  for(const [k,syn] of CB_RULES) if(syn.some(s=>cbNorm(s)===n)) return k;
+  for(const [k,syn] of CB_RULES) if(syn.some(s=>cbNorm(s).length>=2&&n.includes(cbNorm(s)))) return k;
+  return '';
+}
+function cbParseHeader(text){
+  const line=String(text).replace(/^\uFEFF/,'').split(/\r?\n/)[0]||'';
+  const out=[]; let cur='', q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(q){ if(ch==='"'){ if(line[i+1]==='"'){cur+='"';i++} else q=false } else cur+=ch }
+    else if(ch==='"') q=true; else if(ch===','){ out.push(cur); cur='' } else cur+=ch;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+const toKata=s=>String(s).replace(/[\u3041-\u3096]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60));
+const toHira=s=>String(s).replace(/[\u30a1-\u30f6]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60));
+function cbValue(c,k,o){
+  const kana=s=>o.kana==='kata'?toKata(s):o.kana==='hira'?toHira(s):s;
+  const rd=String(c.reading||'').trim(), parts=rd.split(/[\s　]+/).filter(Boolean);
+  const zm=String(c.address||'').match(/〒?\s*(\d{3})\s*[-ー‐−]?\s*(\d{4})/);
+  switch(k){
+    case 'lastname': return c.lastname||'';
+    case 'firstname': return c.firstname||'';
+    case 'fullname': return [c.lastname,c.firstname].filter(Boolean).join(' ');
+    case 'lastkana': return kana(parts.length>1?parts[0]:(c.firstname?'':rd));
+    case 'firstkana': return kana(parts.length>1?parts.slice(1).join(''):'');
+    case 'fullkana': return kana(parts.join(' '));
+    case 'company': return c.company||'';
+    case 'dept': return c.dept||'';
+    case 'title': return c.title||'';
+    case 'depttitle': return [c.dept,c.title].filter(Boolean).join(' ');
+    case 'zip': return zm?zm[1]+'-'+zm[2]:'';
+    case 'address': return String(c.address||'').replace(/〒?\s*\d{3}\s*[-ー‐−]?\s*\d{4}\s*/,'').trim();
+    case 'phone': return c.phone||'';
+    case 'mobile': return c.mobile||'';
+    case 'email': return c.email||'';
+    case 'url': return c.url||'';
+    case 'category': return o.catName?o.catName(c):'';
+    case 'tags': return (c.tags||[]).join(' ');
+    case 'received': return c.received||'';
+    case 'memo':{
+      const L=[c.memo||''];
+      if(o.memoX){
+        if(o.catName) L.push('分類：'+o.catName(c));
+        if((c.tags||[]).length) L.push('タグ：'+c.tags.join(' '));
+        if(c.received) L.push('名刺受取日：'+c.received);
+        (c.history||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+          .forEach(h=>L.push(h.date+' '+h.text));
+      }
+      return L.filter(Boolean).join('\n');
+    }
+    default:
+      if(k&&k.startsWith('x:')) return (c.extra||{})[k.slice(2)]||'';
+      return '';
+  }
+}
+function cbBuild(list,cols,o){
+  const cell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const rows=list.map(c=>cols.map(col=>cell(cbValue(c,col.k,o))).join(','));
+  if(o.head) rows.unshift(cols.map(col=>cell(col.h)).join(','));
+  return rows.join('\r\n')+'\r\n';
+}
+/*COLLABO_END*/
+const LS_COLLABO='meishicho.collabo.v1';
+const CB_DEFAULT=['姓','名','姓（フリガナ）','名（フリガナ）','会社名','部署','役職','郵便番号','住所','電話番号','携帯電話','FAX','メールアドレス','URL','備考'];
+let cbCfg={cols:null,src:'',enc:'sjis',kana:'kata',head:true,memoX:true};
+try{ Object.assign(cbCfg,JSON.parse(store.get(LS_COLLABO)||'{}')) }catch(e){}
+const cbDefaultCols=()=>CB_DEFAULT.map(h=>({h,k:cbAutoKey(h)}));
+if(!Array.isArray(cbCfg.cols)||!cbCfg.cols.length) cbCfg.cols=cbDefaultCols();
+const cbSave=()=>store.set(LS_COLLABO,JSON.stringify(cbCfg));
+const cbFieldOpts=()=>[['','（空欄にする）'],['lastname','姓'],['firstname','名'],['fullname','氏名（姓 名）'],
+  ['lastkana','姓のふりがな'],['firstkana','名のふりがな'],['fullkana','氏名のふりがな'],
+  ['company','会社名・施設名'],['companykana','会社名のふりがな（名刺帳にはないため空欄）'],['dept','部署'],['title','役職'],['depttitle','部署＋役職'],
+  ['zip','郵便番号（住所から取り出し）'],['address','住所'],['phone','電話番号'],['mobile','携帯番号'],
+  ['fax','FAX（名刺帳にはないため空欄）'],['email','メールアドレス'],['url','URL'],['memo','メモ（備考）'],
+  ['category','分類'],['tags','タグ'],['received','受取日']].concat(cfields.map(f=>['x:'+f.id,f.name+'（追加の項目）']));
+const cbOpts=()=>({kana:cbCfg.kana,head:cbCfg.head,memoX:cbCfg.memoX,catName});
+const cbList=()=>$('#cbTarget').value==='view'?filtered():cards;
+function openCollabo(){
+  const n=filtered().length;
+  $('#cbTarget').innerHTML=`<option value="all">すべての名刺（${cards.length}件）</option>`+
+    (n!==cards.length?`<option value="view">いま表示中の名刺だけ（${n}件）</option>`:'');
+  $('#cbEnc').value=cbCfg.enc; $('#cbKana').value=cbCfg.kana;
+  $('#cbHead').checked=cbCfg.head; $('#cbMemoX').checked=cbCfg.memoX;
+  renderCbMap(); openOverlay('#collaboOverlay');
+}
+function renderCbMap(){
+  const opts=cbFieldOpts();
+  $('#cbMap').innerHTML=cbCfg.cols.map((col,i)=>`<tr>
+    <td><input value="${esc(col.h)}" data-cbh="${i}" aria-label="CSVの列名"></td>
+    <td><select data-cbk="${i}" aria-label="入れる内容">${opts.map(([k,l])=>`<option value="${esc(k)}"${k===col.k?' selected':''}>${esc(l)}</option>`).join('')}</select></td>
+    <td class="x"><button type="button" data-cbdel="${i}" aria-label="この列を削除">×</button></td></tr>`).join('');
+  $('#cbSrc').textContent=cbCfg.src?`コラボの CSV「${cbCfg.src}」の列に合わせています（${cbCfg.cols.length}列）`
+    :'いまは仮の列名です。コラボのサンプル CSV を読み込むと、列名と並びを正確に合わせられます。';
+  $('#cbSrc').classList.toggle('ok',!!cbCfg.src);
+  renderCbPrev();
+}
+function renderCbPrev(){
+  const list=cbList().slice(0,3), o=cbOpts();
+  $('#cbPrev').innerHTML=`<table><thead><tr>${cbCfg.cols.map(c=>`<th>${esc(c.h)}</th>`).join('')}</tr></thead><tbody>`+
+    (list.length?list.map(c=>`<tr>${cbCfg.cols.map(col=>`<td>${esc(cbValue(c,col.k,o)).replace(/\n/g,' / ').slice(0,60)}</td>`).join('')}</tr>`).join('')
+      :`<tr><td colspan="${cbCfg.cols.length}">対象の名刺がありません</td></tr>`)+`</tbody></table>`;
+}
+$('#cbMap').addEventListener('input',e=>{
+  const h=e.target.closest('[data-cbh]'), k=e.target.closest('[data-cbk]');
+  if(h) cbCfg.cols[+h.dataset.cbh].h=h.value;
+  if(k) cbCfg.cols[+k.dataset.cbk].k=k.value;
+  cbSave(); renderCbPrev();
+});
+$('#cbMap').addEventListener('click',e=>{
+  const d=e.target.closest('[data-cbdel]'); if(!d) return;
+  cbCfg.cols.splice(+d.dataset.cbdel,1); cbSave(); renderCbMap();
+});
+$('#cbAdd').addEventListener('click',()=>{ cbCfg.cols.push({h:'新しい列',k:''}); cbSave(); renderCbMap() });
+$('#cbReset').addEventListener('click',()=>{
+  if(!confirm('列の設定を仮の列名に戻しますか？')) return;
+  cbCfg.cols=cbDefaultCols(); cbCfg.src=''; cbSave(); renderCbMap();
+});
+$('#cbSample').addEventListener('change',e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  f.arrayBuffer().then(buf=>{
+    let text;
+    try{ text=new TextDecoder('utf-8',{fatal:true}).decode(buf) }catch(_){ text=new TextDecoder('shift_jis').decode(buf) }
+    const heads=cbParseHeader(text);
+    if(!heads.length||heads.every(h=>!h)){ toast('列名を読み取れませんでした'); return }
+    cbCfg.cols=heads.map(h=>({h,k:cbAutoKey(h)})); cbCfg.src=f.name; cbSave(); renderCbMap();
+    const un=cbCfg.cols.filter(c=>!c.k).length;
+    toast(`${heads.length}列を読み込みました${un?`（自動で合わせられなかった ${un}列は空欄にしています）`:''}`);
+  }).catch(()=>toast('ファイルを読み込めませんでした'));
+});
+['cbEnc','cbKana','cbHead','cbMemoX','cbTarget'].forEach(id=>$('#'+id).addEventListener('change',()=>{
+  cbCfg.enc=$('#cbEnc').value; cbCfg.kana=$('#cbKana').value; cbCfg.head=$('#cbHead').checked; cbCfg.memoX=$('#cbMemoX').checked;
+  cbSave(); renderCbPrev();
+}));
+const ENC_SRC='https://cdn.jsdelivr.net/npm/encoding-japanese@2.2.0/encoding.min.js';
+function loadEncoding(){
+  return new Promise((res,rej)=>{
+    if(window.Encoding) return res();
+    const s=document.createElement('script'); s.src=ENC_SRC; s.onload=res; s.onerror=rej; document.head.appendChild(s);
+  });
+}
+$('#cbExport').addEventListener('click',async()=>{
+  const list=cbList();
+  if(!list.length){ toast('書き出す名刺がありません'); return }
+  if(!cbCfg.cols.length){ toast('列が1つもありません'); return }
+  const csv=cbBuild(list,cbCfg.cols,cbOpts()), name=`NIコラボ_アドレス帳_${stamp()}.csv`;
+  if(cbCfg.enc==='sjis'){
+    try{
+      await loadEncoding();
+      const bytes=new Uint8Array(Encoding.convert(Encoding.stringToCode(csv),{to:'SJIS',from:'UNICODE'}));
+      download(name,bytes,'text/csv;charset=shift_jis');
+    }catch(e){
+      download(name,'\uFEFF'+csv,'text/csv;charset=utf-8');
+      toast('Shift_JIS に変換できなかったため UTF-8 で書き出しました（コラボ側で UTF-8 を選んでください）');
+      return;
+    }
+  }else download(name,'\uFEFF'+csv,'text/csv;charset=utf-8');
+  toast(`${list.length}件を書き出しました`);
+});
+
+function openDetail(id,keepFlip){
+  const c=cards.find(x=>x.id===id); if(!c) return;
+  currentId=id; if(!keepFlip) setFlip(false);
+  $('#detailFront').innerHTML=cardHTML(c,0,true);
+  $('#detailBack').innerHTML=backHTML(c);
+  $('#detailFields').innerHTML=fieldRows(c);
+  $('#favBtn').textContent=c.fav?'★ お気に入り解除':'☆ お気に入りに追加';
+  const k=coKey(c), same=k?cards.filter(x=>x.id!==c.id&&coKey(x)===k):[];
+  if(same.length){
+    $('#detailFields').insertAdjacentHTML('beforeend',`<div class="field full"><label>同じ会社の名刺（ほか${same.length}名${same.length>5?'・5名表示':''}）</label>
+      <div class="same">${same.slice(0,5).map(x=>`<button class="same-p" type="button" data-open="${x.id}">${esc(displayName(x))}${deptTitle(x)?`<small>${esc(deptTitle(x))}</small>`:''}</button>`).join('')}
+      <button class="same-all" type="button" data-co="${esc(k)}">この会社の名刺をすべて表示 →</button> <button type="button" class="same-all" data-ctime="${esc(c.company)}">この会社の時系列を見る →</button></div></div>`);
+  }
+  openOverlay('#detailOverlay');
+}
+function setFlip(on){
+  $('#flip').classList.toggle('flipped',on);
+  $('#flipBtn').textContent=on?'↻ 表面を見る':'↻ 裏面を見る';
+}
+
+/* ───────────────────────── 登録・編集フォーム ───────────────────────── */
+function openForm(id){
+  const c=id ? cards.find(x=>x.id===id) : null;
+  $('#formTitle').textContent=c?'名刺を編集':'名刺を登録';
+  $('#saveBtn').textContent=c?'変更を保存':'登録する';
+  currentId=c?c.id:null;
+  const v=(k)=>(c&&c[k])||'';
+  $('#f-company').value=v('company'); $('#f-dept').value=v('dept'); $('#f-title').value=v('title'); $('#f-office')&&($('#f-office').value=v('office'));
+  $('#f-last').value=v('lastname'); $('#f-first').value=v('firstname'); $('#f-reading').value=v('reading');
+  $('#f-phone').value=v('phone'); $('#f-mobile').value=v('mobile'); $('#f-email').value=v('email');
+  $('#f-address').value=v('address'); $('#f-url').value=v('url');
+  $('#f-received').value=v('received')||today();
+  $('#f-tags').value=(c?(c.tags||[]):[]).join(', ');
+  $('#f-memo').value=v('memo');
+  $('#f-cat').innerHTML=`<option value="">未分類</option>`+cats.map(k=>`<option value="${esc(k.name)}">${esc(k.name)}</option>`).join('');
+  $('#f-cat').value = c ? (catOf(c)?c.category:'')
+                        : (state.cat!=='*'&&state.cat!=='__none' ? state.cat : (cats[0]?cats[0].name:''));
+  $('#f-fav').checked=!!(c&&c.fav);
+  formExtraSrc=c?(c.extra||{}):{}; renderFormExtra(false);
+  $('#coList').innerHTML=[...new Set(cards.map(x=>x.company).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'ja')).map(x=>`<option value="${esc(x)}"></option>`).join('');
+  document.querySelectorAll('#cardForm .ocr').forEach(el=>el.classList.remove('ocr'));
+  $('#ocrNote').classList.remove('show');
+  pendingImage=v('image');
+  updateImgPrev();
+  $('#formErr').classList.remove('show');
+  openOverlay('#formOverlay');
+}
+function updateImgPrev(){
+  $('#imgPrev').classList.toggle('show',!!pendingImage);
+  if(pendingImage) $('#imgPrevImg').src=pendingImage;
+}
+function resizeImage(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onerror=rej;
+    r.onload=()=>{
+      const img=new Image();
+      img.onerror=rej;
+      img.onload=()=>{
+        const M=640, s=Math.min(1,M/Math.max(img.width,img.height));
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*s); cv.height=Math.round(img.height*s);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        res(cv.toDataURL('image/jpeg',.72));
+      };
+      img.src=r.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+/* ───────────────────────── 書き出し・読み込み ───────────────────────── */
+function download(name,content,type){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+const stamp=()=>today().replace(/-/g,'');
+function csvOf(list){
+  const head=['分類','会社名・施設名','部署','役職','姓','名','ふりがな','電話','携帯','メール','住所','URL','タグ','メモ','受取日','お気に入り',...cfields.map(f=>f.name),'対応履歴','最終更新'];
+  const cell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const rows=list.map(c=>[catName(c),c.company,c.dept,c.title,c.lastname,c.firstname,c.reading,c.phone,c.mobile,
+    c.email,c.address,c.url,(c.tags||[]).join(' '),c.memo,c.received,c.fav?'★':'',...cfields.map(f=>(c.extra||{})[f.id]||''),
+    (c.history||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(h=>h.date+' '+h.text).join(' / '),
+    c.updated?fmtDT(c.updated):''].map(cell).join(','));
+  return '\uFEFF'+[head.map(cell).join(','),...rows].join('\r\n');
+}
+const vesc=s=>String(s??'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function vcardOf(list){
+  return list.map(c=>{
+    const V=['BEGIN:VCARD','VERSION:3.0'];
+    V.push('N:'+vesc(c.lastname||'')+';'+vesc(c.firstname||'')+';;;');
+    V.push('FN:'+vesc(displayName(c)));
+    if(catOf(c)) V.push('CATEGORIES:'+vesc(c.category));
+    if(c.company||c.dept) V.push('ORG:'+[c.company||'',c.dept||''].map(vesc).join(';'));
+    if(c.title) V.push('TITLE:'+vesc(c.title));
+    if(c.phone) V.push('TEL;TYPE=WORK,VOICE:'+vesc(c.phone));
+    if(c.mobile) V.push('TEL;TYPE=CELL:'+vesc(c.mobile));
+    if(c.email) V.push('EMAIL;TYPE=WORK:'+vesc(c.email));
+    if(c.address) V.push('ADR;TYPE=WORK:;;'+vesc(c.address)+';;;;');
+    if(c.url) V.push('URL:'+vesc(c.url));
+    const note=[c.memo,(c.tags||[]).length?'タグ: '+(c.tags||[]).join(' / '):''].filter(Boolean).join('\n');
+    if(note) V.push('NOTE:'+vesc(note));
+    V.push('END:VCARD');
+    return V.join('\r\n');
+  }).join('\r\n');
+}
+function importJSON(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      let d=JSON.parse(r.result);
+      if(!Array.isArray(d)) d=d.cards||[];
+      const add=d.filter(x=>x&&(x.company||x.lastname||x.firstname))
+                 .map(x=>Object.assign({},DEFAULTS,x,{id:uid(),sample:false}));
+      cards=cards.concat(add);
+      saveCards(); render();
+      toast(`${add.length}件を読み込みました`);
+    }catch(e){ toast('JSONの読み込みに失敗しました') }
+  };
+  r.readAsText(file);
+}
+
+/* ───────────────────────── 共通 UI ───────────────────────── */
+function openOverlay(sel){ $(sel).classList.add('open'); document.body.style.overflow='hidden' }
+function closeOverlay(sel){
+  $(sel).classList.remove('open');
+  if(!document.querySelector('.overlay.open')) document.body.style.overflow='';
+}
+let toastTimer=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+function copyText(s){
+  const done=()=>toast('コピーしました');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(s).then(done).catch(()=>fallbackCopy(s,done));
+  } else fallbackCopy(s,done);
+}
+function fallbackCopy(s,done){
+  const ta=document.createElement('textarea');
+  ta.value=s; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done() }catch(e){ toast('コピーできませんでした') }
+  ta.remove();
+}
+
+/* ───────────────────────── 名刺の文字読み取り（OCR） ───────────────────────── */
+/*PARSER_START*/
+const OCRX={
+  TITLE:/(代表取締役社長|代表取締役|取締役社長|専務取締役|常務取締役|取締役|代表理事|副理事長|理事長|理事|会長|副社長|社長|専務|常務|執行役員|部長代理|副部長|部長|次長|課長代理|課長補佐|課長|係長|主任技師|主任|主査|室長|副所長|所長|副支店長|支店長|店長|工場長|副施設長|施設長|副院長|院長|事務長|看護部長|看護師長|師長|園長|校長|准教授|教授|講師|マネージャー|マネジャー|リーダー|チーフ|ディレクター|プロデューサー|エンジニア|デザイナー|コンサルタント|スーパーバイザー|アドバイザー|技師|弁護士|税理士|公認会計士|司法書士|行政書士|社会保険労務士|弁理士|医師|薬剤師|看護師|介護福祉士|ケアマネジャー|ケアマネージャー|相談員|担当|代表|CEO|CTO|COO|CFO|President|Director|Manager|Engineer)/,
+  CORP_STRONG:/(株式会社|有限会社|合同会社|合資会社|\(株\)|㈱|\(有\)|㈲|一般社団法人|公益社団法人|一般財団法人|公益財団法人|社会福祉法人|医療法人|学校法人|宗教法人|特定非営利活動法人|NPO法人|独立行政法人|\bInc\b|\bLtd\b|\bCo\.|\bCorp\b|Corporation|\bLLC\b|K\.K\.|S\.r\.l|GmbH)/i,
+  CORP:/(協会|組合|連合会|財団|機構|事務所|銀行|信用金庫|病院|クリニック|医院|歯科|薬局|大学|学園|学校|ホーム|保育園|幼稚園|研究所|製作所|工業|商事|商会|商店|産業|ホテル|旅館|役所|役場|県庁|都庁|府庁|省|庁|会館|センター|グループ|Group)/i,
+  DEPT_END:/(本部|事業部|事業所|営業所|支社|支店|本店|部|課|室|係|グループ|チーム|センター|ユニット|セクション|Dept\.?|Division|Section)$/i,
+};
+function ocrClean(t){
+  let s=String(t||'').normalize('NFKC').replace(/[|｜]/g,' ').replace(/\s+/g,' ').trim();
+  s=s.replace(/(\d)\s*[ー−‐‑–—―~〜]\s*(?=\d)/g,'$1-');
+  return s;
+}
+const CJK='\\u3000-\\u30ff\\u3400-\\u9fff々〆ヵヶ';
+const joinCJK=s=>s.replace(new RegExp('(['+CJK+'])\\s+(?=['+CJK+'])','g'),'$1');
+function parseCard(lines){
+  const f={company:'',dept:'',title:'',lastname:'',firstname:'',reading:'',phone:'',mobile:'',email:'',url:'',address:''};
+  const L=lines.map((l,i)=>{ const spaced=ocrClean(l.text); return {i,spaced,s:joinCJK(spaced),size:l.size||0,used:false} })
+               .filter(l=>l.s.length>0);
+  const companies=[], depts=[], names=[];
+  let romaji='';
+  // 1) 連絡先（メール・URL・電話・住所）
+  L.forEach((l,idx)=>{
+    const s=l.s;
+    if(/@/.test(s)){
+      const m=s.replace(/\s+/g,'').match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+      if(m){ if(!f.email) f.email=m[0].toLowerCase(); l.used=true }
+    }
+    if(!/@/.test(s)){
+      const u=s.match(/(https?:\/\/[^\s]+|www\.[^\s]+|\b[a-z0-9-]+(\.[a-z0-9-]+)*\.(co\.jp|or\.jp|ne\.jp|ac\.jp|go\.jp|jp|com|net|org|info|biz|io)\b(\/[^\s]*)?)/i);
+      if(u){ if(!f.url) f.url=u[0]; l.used=true }
+    }
+    const re=/(\+?\d[\d\-() ]{7,}\d)/g; let m, last=0;
+    while((m=re.exec(s))){
+      const digits=m[1].replace(/\D/g,''), pre=s.slice(last,m.index); last=re.lastIndex;
+      if(digits.length<9||digits.length>13) continue;
+      l.used=true;
+      if(/(FAX|ファックス|ファクス|(^|[^A-Za-z])F\s*[.:)]?\s*$)/i.test(pre)) continue;
+      const num=m[1].trim();
+      const mob=/(携帯|Mobile|Mob|Cell|(^|[^A-Za-z])M\s*[.:)]?\s*$)/i.test(pre)||/^0[789]0/.test(digits);
+      if(mob){ if(!f.mobile) f.mobile=num } else if(!f.phone) f.phone=num;
+    }
+    const isAddr=/〒\s*\d{3}-?\d{4}/.test(s)
+      || (/(東京都|北海道|京都府|大阪府|県).{0,12}(市|区|郡|町|村)/.test(s) && /[\d丁番]/.test(s))
+      || /^.{1,6}(市|区|郡).{0,14}\d/.test(s);
+    if(isAddr && !f.address){
+      let a=s.replace(/^(住所|所在地)\s*[:：]?\s*/,'').replace(/〒\s*\d{3}-?\d{4}/,'').replace(/\s*(TEL|Tel|電話|FAX|Fax|E-?mail|URL).*$/,'').trim();
+      if(!a && L[idx+1]) { a=L[idx+1].s; L[idx+1].used=true }
+      const nx=L[idx+1];
+      if(a && nx && !nx.used && /(ビル|タワー|階|[0-9]F$|号室|号館|マンション|館)/.test(nx.s) && !/@|\d{2,4}-\d{2,4}-\d{3,4}/.test(nx.s)){
+        a+=' '+nx.s; nx.used=true;
+      }
+      f.address=a; l.used=true;
+    }
+  });
+  // 2) 会社・部署・役職・ふりがな・氏名
+  L.forEach(l=>{
+    if(l.used) return;
+    const s=l.s;
+    if(OCRX.CORP_STRONG.test(s)){ companies.push(l); return }
+    if(OCRX.DEPT_END.test(s) && !/\d/.test(s)){ depts.push(s); return }
+    const t=l.spaced.match(OCRX.TITLE);
+    if(t && s.length<=30){
+      const pre=joinCJK(l.spaced.slice(0,t.index).trim()), post=l.spaced.slice(t.index+t[0].length).trim();
+      if(!f.title) f.title=t[0]+(/^[ \u3000]?(兼|・)/.test(post)?'':'');
+      if(pre) depts.push(pre);
+      if(post && new RegExp('^['+CJK+'\\s]{2,10}$').test(post)) names.push({s:post,spaced:post,size:l.size});
+      return;
+    }
+    if(OCRX.CORP.test(s) && s.length>=3){ companies.push(l); return }
+    if(/^[\u3041-\u3096\u30a1-\u30fa・ー\s]{3,24}$/.test(l.spaced)){ if(!f.reading) f.reading=l.spaced.replace(/\s+/g,' '); return }
+    if(/^[A-Z][a-zA-Z.'-]+(\s[A-Z][a-zA-Z.'-]+){1,2}$/.test(l.spaced)){ if(!romaji) romaji=l.spaced; return }
+    const cjk=(s.match(new RegExp('['+CJK+']','g'))||[]).length;
+    if(!/\d|[:@]/.test(s) && s.replace(/\s/g,'').length>=2 && s.replace(/\s/g,'').length<=10 && cjk/s.replace(/\s/g,'').length>=.8){
+      names.push({s,spaced:l.spaced,size:l.size});
+    }
+  });
+  if(companies.length){
+    companies.sort((a,b)=>a.i-b.i);
+    let c=companies[0].s;
+    if(companies[1] && companies[1].i===companies[0].i+1) c+=' '+companies[1].s;
+    f.company=c;
+  }
+  if(depts.length) f.dept=[...new Set(depts)].join(' ');
+  if(names.length){
+    names.sort((a,b)=>b.size-a.size);
+    const n=names[0];
+    let parts=n.spaced.split(/[\s\u3000]+/).filter(Boolean);
+    // 「山 田 太 郎」のように1文字ずつ空いた場合：姓2文字・名残りとして分ける
+    if(parts.length>=3 && parts.every(p=>p.length===1)){
+      const all=parts.join('');
+      parts = all.length>=4 ? [all.slice(0,2),all.slice(2)] : [all];
+    }
+    if(parts.length>=2){ f.lastname=parts[0]; f.firstname=parts.slice(1).join('') }
+    else f.lastname=n.s.replace(/\s/g,'');
+  }else if(romaji){ f.lastname=romaji }
+  return f;
+}
+/*PARSER_END*/
+
+const TESS_SRC='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+let scanImg=null, scanRot=0, ocrResult=null, scanBusy=false;
+const tessWorkers={};
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(window.Tesseract) return res();
+    const s=document.createElement('script'); s.src=src;
+    s.onload=res; s.onerror=()=>rej(new Error('script'));
+    document.head.appendChild(s);
+  });
+}
+function scanStep(n){ [1,2,3].forEach(i=>$('#scanStep'+i).classList.toggle('on',i===n)) }
+function setProg(p,msg,err){
+  $('#scanProg').hidden=p<=0; $('#scanProg i').style.width=Math.max(0,Math.min(100,p))+'%';
+  const st=$('#scanStatus'); st.textContent=msg; st.classList.toggle('err',!!err);
+}
+function openScan(){
+  scanImg=null; scanRot=0; ocrResult=null; scanStep(1);
+  setProg(0,'文字の上が画面の上になるように回転してから、読み取ってください。');
+  openOverlay('#scanOverlay');
+}
+function onScanFile(e){
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{ scanImg=img; scanRot=0; drawScan(); scanStep(2); runOCR() };
+  img.onerror=()=>toast('画像を開けませんでした');
+  img.src=URL.createObjectURL(f);
+}
+function rotCanvas(maxSide,gray){
+  const w0=scanImg.naturalWidth, h0=scanImg.naturalHeight, s=Math.min(maxSide/Math.max(w0,h0),3);
+  const w=Math.round(w0*s), h=Math.round(h0*s), r=((scanRot%360)+360)%360, swap=r===90||r===270;
+  const cv=document.createElement('canvas'); cv.width=swap?h:w; cv.height=swap?w:h;
+  const ctx=cv.getContext('2d');
+  ctx.translate(cv.width/2,cv.height/2); ctx.rotate(r*Math.PI/180); ctx.drawImage(scanImg,-w/2,-h/2,w,h);
+  if(gray){
+    const d=ctx.getImageData(0,0,cv.width,cv.height), p=d.data, n=p.length/4;
+    const g=new Uint8ClampedArray(n), hist=new Uint32Array(256);
+    for(let i=0,j=0;j<n;i+=4,j++){ const v=.299*p[i]+.587*p[i+1]+.114*p[i+2]; g[j]=v; hist[g[j]]++ }
+    let lo=0, hi=255, c=0;
+    for(let v=0;v<256;v++){ c+=hist[v]; if(c>n*.01){ lo=v; break } }
+    c=0; for(let v=255;v>=0;v--){ c+=hist[v]; if(c>n*.01){ hi=v; break } }
+    const k=255/Math.max(1,hi-lo);
+    for(let i=0,j=0;j<n;i+=4,j++){ const v=(g[j]-lo)*k; p[i]=p[i+1]=p[i+2]=v }
+    ctx.putImageData(d,0,0);
+  }
+  return cv;
+}
+function drawScan(){
+  const src=rotCanvas(900,false), cv=$('#scanCanvas');
+  cv.width=src.width; cv.height=src.height; cv.getContext('2d').drawImage(src,0,0);
+}
+function onTessLog(m){
+  if(!scanBusy) return;
+  if(m.status==='recognizing text') setProg(25+m.progress*75,`読み取り中… ${Math.round(m.progress*100)}%`);
+  else if(/load|initializ/i.test(m.status)) setProg(5+(m.progress||0)*20,'文字データを準備しています（初回のみ数MBをダウンロード）…');
+}
+async function runOCR(){
+  if(!scanImg||scanBusy) return;
+  const lang=$('#scanLang').value;
+  scanBusy=true; $('#scanRun').disabled=true; $('#scanRetake').disabled=true;
+  setProg(3,'読み取りの準備をしています…');
+  try{
+    await loadScript(TESS_SRC);
+    if(!tessWorkers[lang]){
+      tessWorkers[lang]=Tesseract.createWorker(lang==='jpn'?['jpn','eng']:['jpn_vert','jpn'],1,{logger:onTessLog});
+    }
+    const worker=await tessWorkers[lang];
+    setProg(25,'読み取り中…');
+    const {data}=await worker.recognize(rotCanvas(2200,true));
+    const vert=lang==='jpn_vert';
+    let lines=(data.lines||[]).map(l=>({text:l.text,size:vert?(l.bbox.x1-l.bbox.x0):(l.bbox.y1-l.bbox.y0)}));
+    if(!lines.length) lines=String(data.text||'').split(/\n/).map(t=>({text:t,size:0}));
+    const pv=rotCanvas(640,false);
+    ocrResult={fields:parseCard(lines),raw:String(data.text||'').trim(),image:pv.toDataURL('image/jpeg',.72)};
+    showOcr(); scanStep(3);
+  }catch(err){
+    console.error(err);
+    if(tessWorkers[lang]) { delete tessWorkers[lang] }
+    setProg(0,'読み取りに失敗しました。インターネットに接続されているか確認して、もう一度お試しください（初回は文字データのダウンロードが必要です）。',true);
+  }finally{
+    scanBusy=false; $('#scanRun').disabled=false; $('#scanRetake').disabled=false;
+  }
+}
+const OCR_LABELS=[['company','会社・施設名'],['office','事業所・支店・営業所・工場'],['dept','部署'],['title','役職'],['lastname','氏名（姓）'],['firstname','氏名（名）'],
+  ['reading','ふりがな'],['phone','電話番号'],['mobile','携帯番号'],['email','メール'],['url','URL'],['address','住所']];
+function showOcr(){
+  const f=ocrResult.fields, n=OCR_LABELS.filter(([k])=>f[k]).length;
+  $('#ocrSummary').textContent = n
+    ? `${n}項目を読み取りました。次の画面で修正できます。`
+    : '項目をほとんど読み取れませんでした。明るい場所で撮り直すか、回転・縦書き/横書きの設定を変えてお試しください。';
+  $('#ocrSummary').classList.toggle('err',!n);
+  $('#ocrTable').innerHTML=OCR_LABELS.map(([k,l])=>
+    `<tr><th>${l}</th><td class="${f[k]?'':'none'}">${f[k]?esc(f[k]):'読み取れず'}</td></tr>`).join('');
+  $('#ocrRaw').value=ocrResult.raw;
+}
+const OCR_FIELDS={company:'#f-company',office:'#f-office',dept:'#f-dept',title:'#f-title',lastname:'#f-last',firstname:'#f-first',
+  reading:'#f-reading',phone:'#f-phone',mobile:'#f-mobile',email:'#f-email',url:'#f-url',address:'#f-address'};
+
+/* ───────────────────────── イベント ───────────────────────── */
+$('#scanBtn').addEventListener('click',openScan);
+$('#emptyScan').addEventListener('click',openScan);
+$('#scanCam').addEventListener('change',onScanFile);
+$('#scanFile').addEventListener('change',onScanFile);
+let rotTimer=null; const reRead=()=>{ clearTimeout(rotTimer); rotTimer=setTimeout(()=>{ if(scanImg&&!scanBusy) runOCR() },1200) };
+$('#rotL').addEventListener('click',()=>{ scanRot-=90; drawScan(); reRead() });
+$('#rotR').addEventListener('click',()=>{ scanRot+=90; drawScan(); reRead() });
+$('#scanLang').addEventListener('change',()=>{ if(scanImg&&!scanBusy) runOCR() });
+$('#scanRun').addEventListener('click',runOCR);
+$('#scanRetake').addEventListener('click',()=>scanStep(1));
+$('#scanAgain').addEventListener('click',()=>scanStep(1));
+$('#scanToForm').addEventListener('click',()=>{
+  if(!ocrResult) return;
+  closeOverlay('#scanOverlay'); openForm();
+  let n=0;
+  Object.entries(OCR_FIELDS).forEach(([k,sel])=>{
+    const v=ocrResult.fields[k];
+    if(v){ $(sel).value=v; $(sel).classList.add('ocr'); n++ }
+  });
+  pendingImage=ocrResult.image; updateImgPrev();
+  $('#ocrNote').classList.toggle('show',n>0);
+});
+$('#cardForm').addEventListener('input',e=>e.target.classList.remove('ocr'));
+let qTimer=null;
+$('#q').addEventListener('input',e=>{
+  clearTimeout(qTimer);
+  qTimer=setTimeout(()=>{ state.q=e.target.value; render() },130);
+});
+$('#sort').addEventListener('change',e=>{ state.sort=e.target.value; render() });
+$('#chips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  if(b.dataset.coclear){ state.company='' }
+  else if(b.dataset.fav){ state.fav=!state.fav } else { state.tag=b.dataset.tag||'' }
+  render();
+});
+$('#qScope').addEventListener('change',e=>{ state.scope=e.target.value; render() });
+$('#cattabs').addEventListener('click',e=>{
+  const b=e.target.closest('.cattab'); if(!b) return;
+  if(b.dataset.manage){ openCats(); return }
+  state.cat=b.dataset.cat; render();
+});
+function setView(v){
+  state.view=v; store.set(LS_VIEW,v);
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.view===v));
+}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{ setView(b.dataset.view); render() }));
+$('#clearFilters').addEventListener('click',()=>{
+  state.q=''; state.tag=''; state.fav=false; state.cat='*'; state.company=''; $('#q').value=''; render();
+});
+$('#favBtn').addEventListener('click',()=>{
+  const c=cards.find(x=>x.id===currentId); if(!c) return;
+  c.fav=!c.fav; saveCards(); render(); openDetail(c.id);
+  toast(c.fav?'お気に入りに追加しました':'お気に入りを解除しました');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!document.querySelector('.overlay.open')){
+    e.preventDefault(); $('#q').focus();
+  }
+});
+
+/* 分類の管理 */
+function openCats(){ renderCatList(); openOverlay('#catOverlay') }
+function renderCatList(){
+  $('#catList').innerHTML=cats.map((k,i)=>`<div class="catrow" style="--cat:${k.color}">
+      <span class="sw"></span>
+      <input value="${esc(k.name)}" data-i="${i}" maxlength="20" aria-label="分類名">
+      <span class="cnt">${cards.filter(c=>c.category===k.name).length}件</span>
+      <button type="button" data-del="${i}">削除</button>
+    </div>`).join('') || '<p class="hint">分類がありません。下から追加してください。</p>';
+}
+$('#catList').addEventListener('change',e=>{
+  const inp=e.target.closest('input[data-i]'); if(!inp) return;
+  const k=cats[+inp.dataset.i], nv=inp.value.trim();
+  if(!nv||nv===k.name){ inp.value=k.name; return }
+  if(cats.some(x=>x.name===nv)){ toast('同じ名前の分類があります'); inp.value=k.name; return }
+  cards.forEach(c=>{ if(c.category===k.name) c.category=nv });
+  if(state.cat===k.name) state.cat=nv;
+  k.name=nv; saveCats(); saveCards(); render(); renderCatList(); toast('分類名を変更しました');
+});
+$('#catList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-del]'); if(!b) return;
+  const i=+b.dataset.del, k=cats[i], n=cards.filter(c=>c.category===k.name).length;
+  if(!confirm(`分類「${k.name}」を削除しますか？${n?`\n含まれる ${n} 件の名刺は「未分類」に移ります。`:''}`)) return;
+  cards.forEach(c=>{ if(c.category===k.name) c.category='' });
+  cats.splice(i,1);
+  saveCats(); saveCards(); render(); renderCatList(); toast('分類を削除しました');
+});
+$('#catAddForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const nv=$('#catNew').value.trim(); if(!nv) return;
+  if(cats.some(x=>x.name===nv)){ toast('同じ名前の分類があります'); return }
+  const used=cats.map(x=>x.color);
+  const color=CAT_COLORS.find(c=>!used.includes(c))||CAT_COLORS[cats.length%CAT_COLORS.length];
+  cats.push({name:nv,color}); saveCats(); $('#catNew').value='';
+  render(); renderCatList(); toast(`分類「${nv}」を追加しました`);
+});
+$('#addBtn').addEventListener('click',()=>openForm());
+$('#emptyAdd').addEventListener('click',()=>openForm());
+$('#emptySample').addEventListener('click',()=>{ cards=cards.concat(sampleCards()); saveCards(); render(); toast('サンプルを追加しました') });
+
+$('#menuBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  const p=$('#menuPop'), open=p.classList.toggle('open');
+  $('#menuBtn').setAttribute('aria-expanded',open);
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.h-menu')) $('#menuPop').classList.remove('open');
+});
+$('#menuPop').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  $('#menuPop').classList.remove('open');
+  const act=b.dataset.act;
+  if(act==='csv'){ if(!cards.length){toast('登録がありません');return} download(`名刺帳_${stamp()}.csv`,csvOf(cards),'text/csv') }
+  else if(act==='vcf'){ if(!cards.length){toast('登録がありません');return} download(`名刺帳_${stamp()}.vcf`,vcardOf(cards),'text/vcard') }
+  else if(act==='json'){ download(`名刺帳_backup_${stamp()}.json`,JSON.stringify(cards,null,2),'application/json') }
+  else if(act==='import'){ $('#fileJson').click() }
+  else if(act==='cats'){ openCats() }
+  else if(act==='fields'){ openFields() }
+  else if(act==='collabo'){ openCollabo() }
+  else if(act==='mailAll'){ openMail(filtered().map(c=>c.id)) }
+  else if(act==='mailCfg'){ openMailCfg() }
+  else if(act==='print'){
+    if(state.view!=='sheet'){ setView('sheet'); render() }
+    setTimeout(()=>window.print(),300);
+  }
+  else if(act==='csvView'){
+    const l=filtered(); if(!l.length){toast('表示中の名刺がありません');return}
+    download(`名刺帳_表示中_${stamp()}.csv`,csvOf(l),'text/csv'); toast(`${l.length}件を書き出しました`);
+  }
+  else if(act==='samples'){ cards=cards.concat(sampleCards()); saveCards(); render(); toast('サンプルを追加しました') }
+  else if(act==='wipe'){
+    if(!cards.length){toast('登録がありません');return}
+    if(confirm(`登録した ${cards.length} 名の名刺をすべて削除します。\n本当に削除しますか？`)){
+      if(confirm('この操作は元に戻せません。削除しますか？')){
+        cards=[]; saveCards(); render(); toast('すべて削除しました');
+      }
+    }
+  }
+});
+$('#fileJson').addEventListener('change',e=>{
+  if(e.target.files[0]) importJSON(e.target.files[0]);
+  e.target.value='';
+});
+
+document.querySelectorAll('[data-close]').forEach(b=>
+  b.addEventListener('click',()=>closeOverlay('#'+b.dataset.close)));
+document.querySelectorAll('.overlay').forEach(ov=>
+  ov.addEventListener('click',e=>{ if(e.target===ov) closeOverlay('#'+ov.id) }));
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape') return;
+  $('#menuPop').classList.remove('open');
+  document.querySelectorAll('.overlay.open').forEach(ov=>closeOverlay('#'+ov.id));
+});
+$('#flipBtn').addEventListener('click',()=>setFlip(!$('#flip').classList.contains('flipped')));
+$('#detailFields').addEventListener('click',e=>{
+  const v=e.target.closest('[data-copy]');
+  if(v){ copyText(v.dataset.copy); return }
+  const o=e.target.closest('[data-open]');
+  if(o){ openDetail(o.dataset.open); return }
+  const co=e.target.closest('[data-co]');
+  if(co){ state.company=co.dataset.co; closeOverlay('#detailOverlay'); render(); window.scrollTo({top:0}) }
+});
+$('#groups').addEventListener('click',e=>{
+  const b=e.target.closest('[data-co]'); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  state.company=b.dataset.co; render(); window.scrollTo({top:0});
+});
+$('#f-company').addEventListener('change',()=>{
+  if(currentId) return;
+  const k=$('#f-company').value.normalize('NFKC').replace(/\s+/g,' ').trim(); if(!k) return;
+  const src=cards.find(c=>coKey(c)===k); if(!src) return;
+  let n=0;
+  [['#f-address','address'],['#f-url','url']].forEach(([sel,key])=>{
+    if(!$(sel).value && src[key]){ $(sel).value=src[key]; n++ }
+  });
+  if(catOf(src)){ $('#f-cat').value=src.category; n++ }
+  if(n) toast('同じ会社の住所・分類などを入れました');
+});
+$('#editBtn').addEventListener('click',()=>{ closeOverlay('#detailOverlay'); openForm(currentId) });
+$('#delBtn').addEventListener('click',()=>{
+  const c=cards.find(x=>x.id===currentId); if(!c) return;
+  if(confirm(`「${displayName(c)}」の名刺を削除しますか？`)){
+    cards=cards.filter(x=>x.id!==currentId);
+    saveCards(); closeOverlay('#detailOverlay'); render(); toast('削除しました');
+  }
+});
+
+$('#cardForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const company=$('#f-company').value.trim(), last=$('#f-last').value.trim();
+  if(!company&&!last){ $('#formErr').classList.add('show'); return }
+  const tags=[...new Set($('#f-tags').value.split(/[、,，\s]+/).map(t=>t.trim()).filter(Boolean))];
+  const base={
+    company, office:$('#f-office')?$('#f-office').value.trim():'', dept:$('#f-dept').value.trim(), title:$('#f-title').value.trim(),
+    lastname:last, firstname:$('#f-first').value.trim(), reading:$('#f-reading').value.trim(),
+    phone:$('#f-phone').value.trim(), mobile:$('#f-mobile').value.trim(), email:$('#f-email').value.trim(),
+    address:$('#f-address').value.trim(), url:$('#f-url').value.trim(),
+    received:$('#f-received').value||today(), tags, memo:$('#f-memo').value, image:pendingImage,
+    category:$('#f-cat').value, fav:$('#f-fav').checked,
+    extra:Object.fromEntries([...document.querySelectorAll('#f-extra input[data-fid]')].map(i=>[i.dataset.fid,i.value.trim()]).filter(([,v])=>v)),
+    updated:new Date().toISOString(),
+  };
+  if(currentId){
+    const i=cards.findIndex(x=>x.id===currentId);
+    if(i>-1) cards[i]=Object.assign({},cards[i],base);
+    toast('変更を保存しました');
+  }else{
+    cards.unshift(Object.assign({},DEFAULTS,base,{id:uid(),created:new Date().toISOString()}));
+    toast('名刺を登録しました');
+  }
+  saveCards(); closeOverlay('#formOverlay'); render();
+});
+$('#f-img').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  resizeImage(f).then(d=>{ pendingImage=d; updateImgPrev() }).catch(()=>toast('画像を読み込めませんでした'));
+  e.target.value='';
+});
+$('#imgClear').addEventListener('click',()=>{ pendingImage=''; updateImgPrev() });
+
+$('#sampleClear').addEventListener('click',()=>{
+  cards=cards.filter(c=>!c.sample);
+  saveCards(); render(); toast('サンプルを削除しました');
+});
+$('#bannerClose').addEventListener('click',()=>{ bannerDismissed=true; $('#banner').classList.remove('show') });
+
+/* ───────────────────────── 起動 ───────────────────────── */
+loadCats();
+loadFields();
+loadCards();
+document.addEventListener('click',e=>{ const b=e.target.closest('.seg [data-view="time"],.seg [data-v="time"]'); if(!b) return; if(state.view==='time') return; setView('time'); });
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-ctime]'); if(!b) return; closeOverlay('#detailOverlay'); openCTime(b.dataset.ctime); });
+document.addEventListener('change',e=>{ if(e.target&&e.target.id==='coSel') render(); });
+document.addEventListener('click',e=>{ const b=e.target.closest('#tlMode'); if(!b) return; localStorage.setItem('meishicho.tlmode.v1',tlMode()==='mo'?'co':'mo'); render(); });
+document.addEventListener('click',e=>{ const b=e.target.closest('#pmToggle'); if(!b) return; localStorage.setItem('meishicho.photo.v1',localStorage.getItem('meishicho.photo.v1')==='1'?'':'1'); render(); });
+setView(['list','company','sheet','time'].includes(store.get(LS_VIEW))?store.get(LS_VIEW):'card');
+render();
+</script>
+<script>
+/*ONEDRIVE_START*/
+/* ───────── OneDrive 保存（ファミリー365・共有／個人） ───────── */
+document.body.insertAdjacentHTML('afterbegin',`<div class="overlay" id="odOverlay" role="dialog" aria-modal="true" aria-label="OneDriveの設定">
+  <div class="dialog" style="max-width:520px">
+    <button class="d-close" data-close="odOverlay" aria-label="閉じる">×</button>
+    <h2 style="margin:0 0 10px">OneDrive の設定</h2>
+    <div class="f"><label>クライアントID（手順書の「アプリの登録」で発行したもの）</label>
+      <input id="odClientId" type="text" placeholder="例）00000000-0000-0000-0000-000000000000" autocomplete="off"></div>
+    <div class="f"><label>接続の状態</label><p id="odMe" style="margin:0" class="hint">未接続</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px">
+      <button type="button" class="btn primary sm" id="odSignin">サインイン</button>
+      <button type="button" class="btn subtle sm" id="odSignout">サインアウト</button>
+      <button type="button" class="btn subtle sm" id="odSyncNow">今すぐ同期</button>
+    </div>
+    <div class="f"><label id="odSharedName">共有フォルダー：未選択（個人の名刺だけなら選ばなくてOK）</label>
+      <button type="button" class="btn subtle sm" id="odPick">共有フォルダーを選ぶ</button>
+      <div id="odShareList" style="margin-top:8px"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
+      <button type="button" class="btn subtle sm" id="odClear">接続設定を消す</button>
+      <button type="button" class="btn primary sm" id="odSave">保存</button>
+    </div>
+  </div>
+</div>`);
+const LS_OD_CFG='meishicho.od.cfg.v1', LS_OD_SNAP='meishicho.od.snap.v1', LS_OD_SCOPE='meishicho.od.scope.v1';
+const OD_AUTH='https://login.microsoftonline.com/consumers';
+const GRAPH='https://graph.microsoft.com/v1.0';
+let odCfg={clientId:'',shared:null};if(!odCfg.clientId)odCfg.clientId='0f33bab5-2cfc-40a4-8831-384d2dc786a8';
+try{ Object.assign(odCfg,JSON.parse(store.get(LS_OD_CFG)||'{}')) }catch(e){}
+let odScopeDefault=store.get(LS_OD_SCOPE)||'private';
+let odSnap={cards:{},settings:''};
+try{ const s=JSON.parse(store.get(LS_OD_SNAP)||'{}'); if(s&&typeof s==='object'){ odSnap.cards=s.cards||{}; odSnap.settings=s.settings||'' } }catch(e){}
+let odMe='', odSyncing=false, odTimer=null, odSettingsDirty=false, pca=null, odAccount=null, odError='';
+let odBaseCache={};
+
+function odChipSet(txt,cls){
+  let c=document.getElementById('odChip');
+  if(!c){ c=document.createElement('button'); c.id='odChip'; c.type='button';
+    c.style.cssText='position:fixed;bottom:14px;right:14px;z-index:600;font:700 11px/1 "Zen Kaku Gothic New",sans-serif;padding:6px 10px;border-radius:99px;border:1px solid #D8DDE2;background:#FDFCF8;color:#6A7380;box-shadow:0 2px 8px rgba(36,42,51,.12);cursor:pointer';
+    c.addEventListener('click',()=>openOdCfg()); document.body.appendChild(c);
+  }
+  c.textContent=txt;
+  c.style.color=cls==='err'?'#C2403A':cls==='ok'?'#2F7D6B':'#6A7380';
+  c.style.borderColor=cls==='err'?'#C2403A':cls==='ok'?'#2F7D6B':'#D8DDE2';
+}
+function odChip(){
+  if(!odCfg.clientId){ odChipSet('OneDrive 未設定',''); return }
+  if(!odAccount){ odChipSet('OneDrive 未接続',''); return }
+  if(odSyncing){ odChipSet('同期中…',''); return }
+  if(odError){ odChipSet('同期エラー','err'); return }
+  odChipSet('OneDrive ✔ '+(odMe||'接続済'),'ok');
+}
+function odNote(msg,err){ toast(err?('⚠ '+msg):msg); if(err) odError=String(msg).slice(0,80); odChip() }
+function odReady(){ return !!(odCfg.clientId&&odAccount) }
+
+/* --- MSAL --- */
+function odMsal(){
+  return new Promise((res,rej)=>{
+    if(window.msal&&window.msal.PublicClientApplication) return res();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js';
+    s.onload=()=>res(); s.onerror=()=>rej(new Error('MSAL を読み込めませんでした（通信を確認してください）'));
+    document.head.appendChild(s);
+  });
+}
+function odRedirectUri(){ return location.origin+location.pathname }
+async function odInitPca(){
+  if(pca) return pca;
+  await odMsal();
+  pca=new msal.PublicClientApplication({auth:{clientId:odCfg.clientId,authority:OD_AUTH,redirectUri:odRedirectUri()},cache:{cacheLocation:'localStorage'}});
+  await pca.initialize();
+  const acs=pca.getAllAccounts();
+  if(acs.length) odAccount=acs[0];
+  return pca;
+}
+async function odToken(){
+  const p=await odInitPca();
+  if(!odAccount) throw new Error('サインインが必要です');
+  const SC=['User.Read','Files.ReadWrite','Files.ReadWrite.All'];
+  try{ const r=await p.acquireTokenSilent({scopes:SC,account:odAccount}); return r.accessToken }
+  catch(e){ const r=await p.acquireTokenPopup({scopes:SC,account:odAccount,loginHint:odAccount.username}); odAccount=r.account; return r.accessToken }
+}
+async function gFetch(url,opt){
+  opt=opt||{};
+  const mk=t=>Object.assign({},opt,{headers:Object.assign({'Authorization':'Bearer '+t},opt.body!=null?{'Content-Type':opt.json?'application/json':'application/octet-stream'}:{},opt.headers||{})});
+  let r=await fetch(url,mk(await odToken()));
+  if(r.status===401){ r=await fetch(url,mk(await odToken())) }
+  if(!r.ok) throw new Error('Graph '+r.status+' '+(url.split('/').slice(3).join('/').slice(0,80)));
+  return r;
+}
+async function odLogin(){
+  if(!location.href.startsWith('http')){ odNote('OneDrive接続には、インターネット上のアドレス（https）で開く必要があります。手順書の「ファイルの置き場所」をご確認ください',true); return }
+  const p=await odInitPca();
+  const r=await p.loginPopup({scopes:['User.Read','Files.ReadWrite','Files.ReadWrite.All'],redirectUri:odRedirectUri()});
+  odAccount=r.account;
+  try{ const j=await (await gFetch(GRAPH+'/me')).json(); odMe=j.displayName||j.userPrincipalName||'' }catch(e){ odMe=odAccount.username||'' }
+  odError=''; odChip(); toast('OneDrive に接続しました（'+(odMe||odAccount.username)+'）');
+  odSync(true);
+}
+async function odLogout(){
+  try{ if(pca) await pca.logoutPopup({account:odAccount}) }catch(e){}
+  odAccount=null; odMe=''; odChip();
+}
+
+/* --- フォルダー（指定itemの下に「名刺_共有」等を作る） --- */
+async function odChildren(driveId,itemId){
+  const url=driveId?(GRAPH+'/drives/'+driveId+'/items/'+itemId+'/children'):(GRAPH+'/me/drive/items/'+itemId+'/children');
+  return (await (await gFetch(url)).json()).value||[];
+}
+async function odEnsure(driveId,startId,parts){
+  let cur=startId;
+  for(const nm of parts){
+    const ch=await odChildren(driveId,cur);
+    const f=ch.find(x=>x.name===nm&&x.folder);
+    if(f){ cur=f.id; continue }
+    const url=driveId?(GRAPH+'/drives/'+driveId+'/items/'+cur+'/children'):(GRAPH+'/me/drive/items/'+cur+'/children');
+    try{ const r=await gFetch(url,{method:'POST',body:JSON.stringify({name:nm,folder:{},'@microsoft.graph.conflictBehavior':'fail'}),json:1}); cur=(await r.json()).id }catch(e){ const ch2=await odChildren(driveId,cur); const f2=ch2.find(x=>x.name===nm&&x.folder); if(f2){cur=f2.id}else{throw e} }
+  }
+  return cur;
+}
+async function odBase(scope){
+  if(odBaseCache[scope]) return odBaseCache[scope];
+  let b;
+  if(scope==='shared'){
+    if(!odCfg.shared) return null;
+    if(/vault/i.test(odCfg.shared.name||'')){ odCfg.shared=null; try{store.set(LS_OD_CFG,JSON.stringify(odCfg))}catch(e){} return null }
+    if(!odCfg.shared.driveId){
+      try{ const rr=await (await gFetch(GRAPH+'/me/drive/root/children?$top=100')).json();
+        const ff=(rr.value||[]).find(x=>x.folder&&x.name===odCfg.shared.name);
+        if(ff&&ff.parentReference&&ff.parentReference.driveId){ odCfg.shared={driveId:ff.parentReference.driveId,id:ff.id,name:ff.name}; try{store.set(LS_OD_CFG,JSON.stringify(odCfg))}catch(e){} }
+      }catch(e){}
+      if(!odCfg.shared.driveId) return null;
+    }
+    b={driveId:odCfg.shared.driveId,baseId:await odEnsure(odCfg.shared.driveId,odCfg.shared.id,['名刺_共有'])};
+  }else{
+    const root=await (await gFetch(GRAPH+'/me/drive/root')).json();
+    b={driveId:'',baseId:await odEnsure('',root.id,['名刺帳（個人用）'])};
+  }
+  odBaseCache[scope]=b; return b;
+}
+async function odPutCard(scope,id,obj){
+  const b=await odBase(scope); if(!b) return false;
+  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/cards/'+id+'.json'):(GRAPH+'/me/drive/items/'+b.baseId+':/cards/'+id+'.json');
+  await gFetch(url,{method:'PUT',body:JSON.stringify(obj),json:1});
+  return true;
+}
+async function odDelCard(scope,id){
+  if(scope==='shared'&&!odCfg.shared) return;
+  const b=await odBase(scope); if(!b) return;
+  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/cards/'+id+'.json'):(GRAPH+'/me/drive/items/'+b.baseId+':/cards/'+id+'.json');
+  try{ await gFetch(url,{method:'DELETE'}) }catch(e){ if(!/404/.test(String(e))) throw e }
+}
+async function odListCards(scope){
+  const b=await odBase(scope); if(!b) return [];
+  const url=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+'/children'):(GRAPH+'/me/drive/items/'+b.baseId+'/children');
+  const j=await (await gFetch(url)).json();
+  const files=(j.value||[]).filter(x=>x.file&&x.name.endsWith('.json'));
+  const out=[];
+  for(const f of files){
+    const u=b.driveId?(GRAPH+'/drives/'+b.driveId+'/items/'+f.id+'/content'):(GRAPH+'/me/drive/items/'+f.id+'/content');
+    try{ const d=JSON.parse(await (await gFetch(u)).text()); if(d&&d.id) out.push(d) }catch(e){}
+  }
+  return out;
+}
+async function odGetSettings(){
+  if(!odCfg.shared) return null;
+  const b=await odBase('shared'); if(!b) return null;
+  try{ return await (await gFetch(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/settings.json')).json() }
+  catch(e){ if(/404/.test(String(e))) return null; throw e }
+}
+async function odPutSettings(obj){
+  if(!odCfg.shared) return;
+  const b=await odBase('shared'); if(!b) return;
+  await gFetch(GRAPH+'/drives/'+b.driveId+'/items/'+b.baseId+':/settings.json',{method:'PUT',body:JSON.stringify(obj),json:1});
+}
+
+/* --- マージ --- */
+function odMergeCard(lo,re){
+  const reNew=String(re.updated||'')>String(lo.updated||'');
+  const win=reNew?re:lo, lose=reNew?lo:re;
+  const out=Object.assign({},win);
+  out.history=(win.history||[]).slice();
+  (lose.history||[]).forEach(h=>{ if(h&&h.id&&!out.history.some(x=>x.id===h.id)) out.history.push(h) });
+  out.extra=Object.assign({},lose.extra||{},win.extra||{});
+  out.tags=[...new Set([].concat(win.tags||[],lose.tags||[]))];
+  if(!out.image&&lose.image) out.image=lose.image;
+  out.rev=Math.max(lo.rev||0,re.rev||0)+1;
+  out.scope=lo.scope||re.scope||'private';
+  return out;
+}
+
+/* --- 同期本体 --- */
+async function odSync(manual){
+  if(!odReady()){ if(manual) odNote('まず「サインイン」してください（⋯ → OneDrive の設定）',true); return }
+  if(odSyncing) return;
+  if(!navigator.onLine){ odChipSet('オフライン','err'); return }
+  odSyncing=true; odError=''; odBaseCache={}; odChip();
+  try{
+    if(!odMe){ try{ odMe=(await (await gFetch(GRAPH+'/me')).json()).displayName||'' }catch(e){ odMe=(odAccount&&odAccount.username)||'' } }
+    let remote=[];
+    for(const sc of ['shared','private']){
+      if(sc==='shared'&&!odCfg.shared) continue;
+      try{ remote=remote.concat(await odListCards(sc)) }catch(e){ if(manual) throw e }
+    }
+    remote.forEach(re=>{
+      re.scope=re.scope==='shared'?'shared':'private';
+      const lo=cards.find(x=>x.id===re.id);
+      if(!lo){ cards.push(re); odSnap.cards[re.id]={ser:odSer(re),s:re.scope,rev:re.rev||0} }
+      else{
+        const m=odMergeCard(lo,re);
+        if(odSer(lo)!==odSer(m)){
+          Object.assign(lo,m);
+          const old=odSnap.cards[lo.id];
+          if(old&&old.ser===odSer(re)) odSnap.cards[lo.id]={ser:odSer(lo),s:lo.scope,rev:lo.rev};
+        }
+      }
+    });
+    const st=await odGetSettings();
+    if(st&&st.updated&&String(st.updated)>String(odSnap.settings||'')&&(st.cats||st.fields)){
+      if(st.cats){ cats=st.cats; saveCats() }
+      if(st.fields){ cfields=st.fields; saveFields() }
+      odSnap.settings=String(st.updated);
+      renderCatTabs();
+    }
+    for(const c of cards){
+      const prev=odSnap.cards[c.id];
+      if(prev&&prev.ser===odSer(c)) continue;
+      if(!c.scope) c.scope=prev?prev.s:odScopeDefault;
+      c.rev=(c.rev||0)+1; c.updated=c.updated||new Date().toISOString();
+      c.updatedBy=odMe||c.updatedBy||'';
+      c.createdBy=c.createdBy||odMe||'';
+      const ser=JSON.stringify(c);
+      if(await odPutCard(c.scope,c.id,c)) odSnap.cards[c.id]={ser,s:c.scope,rev:c.rev};
+    }
+    for(const id of Object.keys(odSnap.cards)){
+      if(!cards.some(x=>x.id===id)){
+        await odDelCard(odSnap.cards[id].s,id);
+        delete odSnap.cards[id];
+      }
+    }
+    if(odSettingsDirty&&odCfg.shared){
+      const obj={cats,fields,updated:new Date().toISOString(),by:odMe};
+      await odPutSettings(obj); odSnap.settings=obj.updated; odSettingsDirty=false;
+    }
+    odSnap.time=new Date().toISOString();
+    store.set(LS_OD_SNAP,JSON.stringify(odSnap));
+    _odInternal=true; saveCards(); _odInternal=false;
+    render(); odChip();
+    if(manual) toast('OneDrive と同期しました');
+  }catch(e){
+    odError=String(e.message||e); odChip();
+    if(manual) odNote('同期できませんでした：'+odError,true);
+  }finally{ odSyncing=false }
+}
+const odSer=c=>JSON.stringify(c);
+function odQueue(){ clearTimeout(odTimer); odTimer=setTimeout(()=>{ odSync(false) },2500) }
+
+/* --- 既存関数を包む --- */
+let _odInternal=false;
+const _saveCards=saveCards;
+saveCards=function(){
+  _saveCards();
+  if(_odInternal) return;
+  try{
+    if(odReady()){
+      cards.forEach(c=>{ if(!c.scope) c.scope=odScopeDefault; c.updatedBy=odMe||c.updatedBy||'' });
+      odQueue();
+    }
+  }catch(e){}
+};
+const _saveCats=saveCats, _saveFields=saveFields;
+saveCats=function(){ _saveCats(); if(!_odInternal&&odReady()){ odSettingsDirty=true; odQueue() } };
+saveFields=function(){ _saveFields(); if(!_odInternal&&odReady()){ odSettingsDirty=true; odQueue() } };
+const _openDetail=openDetail;
+openDetail=function(id,keep){ _openDetail(id,keep); try{ odDecorDetail(id) }catch(e){} };
+function odDecorDetail(id){
+  const c=cards.find(x=>x.id===id); if(!c) return;
+  const anchor=document.getElementById('detailFields'); if(!anchor) return;
+  const old=document.getElementById('odScopeRow'); if(old) old.remove();
+  const row=document.createElement('div'); row.className='field full'; row.id='odScopeRow';
+  const lab=document.createElement('label'); lab.textContent='保存先（OneDrive接続時）';
+  const box=document.createElement('div');
+  const mk=(v,txt)=>{ const b=document.createElement('button'); b.type='button'; b.className='btn sm '+(c.scope===v?'primary':'subtle');
+    b.textContent=(c.scope===v?'● ':'')+txt; b.dataset.odset=v; b.dataset.odid=id; return b };
+  box.appendChild(mk('private','個人（自分だけ）'));
+  box.appendChild(mk('shared','共有（みんな）'));
+  row.appendChild(lab); row.appendChild(box); anchor.appendChild(row);
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-odset]'); if(!b) return;
+  const c=cards.find(x=>x.id===b.dataset.odid); if(!c||c.scope===b.dataset.odset) return;
+  if(b.dataset.odset==='private'&&c.scope==='shared'&&c.createdBy&&odMe&&c.createdBy!==odMe){ toast('共有の名刺を「個人」にできるのは、登録した人（'+c.createdBy+'）だけです'); return }
+  c.scope=b.dataset.odset; c.updated=new Date().toISOString(); c.rev=(c.rev||0)+1;
+  saveCards(); openDetail(c.id,true);
+  toast(c.scope==='shared'?'この名刺を「共有」にしました':'この名刺を「個人」にしました');
+});
+
+/* --- 画面：保存先の切替・メニュー --- */
+function odToolbar(){
+  const old=document.getElementById('odScopeBox'); if(old) old.remove();
+  const tb=document.getElementById('toolbar'); if(!tb) return;
+  const box=document.createElement('div'); box.id='odScopeBox';
+  box.style.cssText='display:inline-flex;align-items:center;gap:6px;margin-left:10px';
+  box.innerHTML='<span style="font-size:11px;color:#6A7380;font-weight:700">保存先</span>'+
+    '<button type="button" class="btn sm'+(odScopeDefault==='private'?' primary':' subtle')+'" data-oddef="private">個人</button>'+
+    '<button type="button" class="btn sm'+(odScopeDefault==='shared'?' primary':' subtle')+'" data-oddef="shared">共有</button>';
+  tb.appendChild(box);
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-oddef]'); if(!b) return;
+  odScopeDefault=b.dataset.oddef; store.set(LS_OD_SCOPE,odScopeDefault);
+  odToolbar();
+  toast('新しい名刺の保存先を「'+(odScopeDefault==='shared'?'共有':'個人')+'」にしました');
+});
+async function odPickShared(){
+  if(!odReady()){ odNote('先にサインインしてください',true); return }
+  const cands={};
+  try{
+    const j=await (async()=>{ const out=[];try{ const s=await (await gFetch(GRAPH+'/me/drive/sharedWithMe')).json(); (s.value||[]).forEach(f=>{ if(f.folder) out.push(f) }) }catch(e){}try{ const r=await (await gFetch(GRAPH+'/me/drive/root/children?$top=100')).json(); (r.value||[]).forEach(f=>{ if(f.folder) out.push(f) }) }catch(e){}return {value:out} })();
+    (j.value||[]).forEach(x=>{
+      const it=x.remoteItem||x;
+      if((it.folder||(x.remoteItem&&x.remoteItem.folder))&&!x.deleted)
+        if(/vault/i.test(x.name||it.name||''))return;cands[((it.parentReference&&it.parentReference.driveId)||'')+'/'+(it.id||'')]={driveId:(it.parentReference&&it.parentReference.driveId)||'',id:it.id,name:x.name||it.name||'(無題)'};
+    });
+  }catch(e){}
+  try{
+    const j2=await (await gFetch(GRAPH+'/me/drive/root/children')).json();
+    (j2.value||[]).forEach(x=>{
+      if(x.remoteItem&&x.remoteItem.folder&&!x.deleted)
+        if(/vault/i.test(x.name||''))return;cands[(x.remoteItem.parentReference.driveId||'')+'/'+x.remoteItem.id]={driveId:x.remoteItem.parentReference.driveId,id:x.remoteItem.id,name:x.name||'(無題)'};
+    });
+  }catch(e){}
+  const list=Object.values(cands);
+  const el=document.getElementById('odShareList');
+  el.innerHTML=list.length
+    ? list.map((f,i)=>`<button type="button" class="btn subtle sm" data-odshare="${i}" style="display:block;width:100%;text-align:left;margin-bottom:6px">📁 ${esc(f.name)}</button>`).join('')
+    : '<p class="hint" style="margin:0">共有されたフォルダーが見つかりません。先にOneDriveで共有フォルダーを開き、「マイファイルに追加（ショートカット）」をしてから、もう一度押してください。</p>';
+  el._cands=list;
+}
+function openOdCfg(){
+ try{var _o=document.getElementById('odOverlay');_o.classList.remove('hidden');_o.style.display='';}catch(e){}
+  document.getElementById('odClientId').value=odCfg.clientId||'';
+  document.getElementById('odSharedName').textContent=odCfg.shared?('共有フォルダー：'+odCfg.shared.name):'共有フォルダー：未選択（個人の名刺だけなら選ばなくてOK）';
+  document.getElementById('odMe').textContent=odAccount?(odMe||odAccount.username)+' で接続中':'未接続';
+  document.getElementById('odShareList').innerHTML='';
+  odChip(); openOverlay('#odOverlay');
+}
+document.getElementById('odSave').addEventListener('click',()=>{
+  const cid=document.getElementById('odClientId').value.trim();
+  if(cid&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)){ toast('クライアントIDの形が違います（例：00000000-0000-…）'); return }
+  odCfg.clientId=cid; store.set(LS_OD_CFG,JSON.stringify(odCfg));
+  pca=null; toast('保存しました。次に「サインイン」を押してください'); odChip();
+});
+document.getElementById('odSignin').addEventListener('click',async()=>{ try{ await odLogin(); openOdCfg() }catch(e){ odNote('サインインできませんでした：'+(e.message||e),true) } });
+document.getElementById('odSignout').addEventListener('click',()=>{ odLogout(); document.getElementById('odMe').textContent='未接続'; toast('サインアウトしました') });
+document.getElementById('odPick').addEventListener('click',()=>odPickShared().catch(e=>odNote('フォルダー一覧を取れませんでした：'+(e.message||e),true)));
+document.getElementById('odShareList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-odshare]'); if(!b) return;
+  const f=(document.getElementById('odShareList')._cands||[])[+b.dataset.odshare]; if(!f) return;
+  odCfg.shared=f; store.set(LS_OD_CFG,JSON.stringify(odCfg));
+  document.getElementById('odSharedName').textContent='共有フォルダー：'+f.name;
+  toast('共有フォルダーを「'+f.name+'」に設定しました');
+});
+document.getElementById('odSyncNow').addEventListener('click',()=>odSync(true));
+document.getElementById('odClear').addEventListener('click',()=>{
+  if(!confirm('OneDriveとの接続設定を消します？（名刺データは消えません）')) return;
+  odCfg={clientId:'',shared:null}; store.set(LS_OD_CFG,JSON.stringify(odCfg));
+  odSnap={cards:{},settings:''}; store.set(LS_OD_SNAP,'{}');
+  odAccount=null; pca=null; odMe=''; odChip(); openOdCfg();
+});
+(function(){
+  const w=document.querySelector('[data-act="wipe"]');
+  if(w){
+    const mk=(act,txt)=>{ const b=document.createElement('button'); b.type='button'; b.dataset.act=act; b.setAttribute('role','menuitem'); b.textContent=txt; w.parentElement.insertBefore(b,w); };
+    mk('odCfg','OneDrive の設定・接続');
+    mk('odSync','OneDrive と今すぐ同期');
+  }
+})();
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act="odCfg"],[data-act="odSync"]'); if(!b) return;
+  if(b.dataset.act==='odCfg') openOdCfg(); else odSync(true);
+});
+/* 起動時 */
+odChip(); odToolbar();
+(async()=>{
+  if(!odCfg.clientId) return;
+  try{ await odInitPca() }catch(e){ return }
+  if(odAccount){ odChip(); try{ await odSync(false) }catch(e){} }
+})();
+window.openOdCfg=openOdCfg; window.odSync=odSync;
+/*ONEDRIVE_END*/
+
+try{document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('.d-close'):null;if(!b)return;var o=document.getElementById('odOverlay');if(o){o.classList.remove('open');o.classList.add('hidden');o.style.display='none'}}
+,true);}catch(e){}
+
+/*odCloseFix*/
+try{window.addEventListener('unhandledrejection',function(e){try{odNote('エラー：'+String((e.reason&&e.reason.message)||e.reason).slice(0,200),true)}catch(_){}})}catch(e){}
+/*SYNCFIX*/
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
